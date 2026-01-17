@@ -34,17 +34,19 @@ export default function DecisionScreen({ eventTitle, userSelection, onViewNodes 
 
   return (
     <div style={{
-      width: '100%',
+      width: '420px',
       minWidth: '420px',
-      height: '100%',
-      minHeight: '100vh',
+      maxWidth: '420px',
+      height: '600px',
+      maxHeight: '600px',
       background: '#0a0f1a',
       fontFamily: 'Inter, system-ui, sans-serif',
       color: '#e2e8f0',
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
-      overflow: 'hidden',
+      overflowY: 'auto',
+      overflowX: 'hidden',
     }}>
       {/* Spotlight effect */}
       <Spotlight />

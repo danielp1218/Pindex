@@ -120,13 +120,13 @@ function App() {
           <div className="absolute bottom-24 left-8 right-8 pointer-events-none z-[200] animate-fade-in" style={{ animationDelay: '1s' }}>
             <div className="max-w-[1400px] mx-auto pl-32 mb-6">
               <h1 className="text-5xl md:text-7xl text-white font-serif font-bold leading-tight tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
-                A <span className="italic">higher standard</span>
+                Bet <span className="italic">smarter </span>
               </h1>
               <h1 className="text-5xl md:text-7xl text-white font-serif font-bold leading-tight tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
-                in Polymarket betting.
+                with PolyIndex.
               </h1>
               <p className="text-gray-300 mt-5 text-lg font-medium">
-                Diversify your risk, creating your own agentic index funds on any bet.
+                Build diversified portfolios with AI-powered index funds on Polymarket.
               </p>
             </div>
 

@@ -3,9 +3,9 @@ export function BalanceCard() {
     <div className="bg-[#1a2332]/80 backdrop-blur-sm rounded-xl p-5 w-full h-full border border-white/10">
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-baseline">
-          <span className="text-2xl text-white/80">$</span>
-          <span className="text-4xl font-semibold text-white tracking-tight">1,652,342</span>
-          <span className="text-xl text-white/60">.90</span>
+          <span className="text-2xl" style={{ color: '#9ca3af' }}>$</span>
+          <span className="text-4xl font-semibold tracking-tight" style={{ color: '#9ca3af' }}>847,291</span>
+          <span className="text-xl" style={{ color: '#9ca3af' }}>.45</span>
         </div>
         <div className="flex gap-1">
           <button className="px-3 py-1.5 rounded-md text-xs font-medium bg-gray-700 text-white">Balance</button>
@@ -57,7 +57,7 @@ export function BalanceCard() {
 
       <div className="flex justify-between items-center pt-1 border-t border-gray-700/50">
         <span className="text-sm text-gray-400">Available to spend</span>
-        <span className="text-lg font-semibold text-white">$1,000,000.00</span>
+        <span className="text-lg font-semibold" style={{ color: '#9ca3af' }}>$524,180.00</span>
       </div>
     </div>
   );

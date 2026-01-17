@@ -12,8 +12,8 @@ function VisualizationScreen({ graphData }: VisualizationScreenProps) {
   useEffect(() => {
     if (!svgRef.current || graphData.nodes.length === 0) return;
 
-    const width = 560;
-    const height = 400;
+    const width = 380;
+    const height = 350;
 
     // Clear previous render
     d3.select(svgRef.current).selectAll('*').remove();
