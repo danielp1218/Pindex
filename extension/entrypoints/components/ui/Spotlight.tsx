@@ -13,14 +13,21 @@ export function Spotlight() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-30 transition duration-300">
+    <div style={{
+      pointerEvents: 'none',
+      position: 'fixed',
+      inset: 0,
+      zIndex: 30,
+      transition: 'duration-300',
+    }}>
       <div
-        className="absolute inset-0 opacity-100"
         style={{
+          position: 'absolute',
+          inset: 0,
+          opacity: 1,
           background: `radial-gradient(600px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(59, 130, 246, 0.15), transparent 40%)`,
         }}
       />
     </div>
   );
 }
-
