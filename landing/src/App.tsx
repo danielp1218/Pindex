@@ -2,28 +2,13 @@ import { Sidebar } from './components/Sidebar';
 import { BalanceCard } from './components/BalanceCard';
 import { BetsList } from './components/BetsList';
 import { IndexTable } from './components/IndexTable';
+import { Spotlight } from './components/ui/Spotlight';
 
 function App() {
   return (
     <div className="h-screen bg-[#0d1926] overflow-hidden relative">
       {/* Thin diagonal light beam - shifted right, more white-blue */}
-      <div
-        className="absolute inset-0 pointer-events-none z-[42]"
-        style={{
-          background: `linear-gradient(
-            45deg,
-            transparent 0%,
-            transparent 38%,
-            rgba(200, 220, 250, 0.04) 42%,
-            rgba(220, 235, 255, 0.14) 48%,
-            rgba(240, 248, 255, 0.2) 52%,
-            rgba(220, 235, 255, 0.14) 56%,
-            rgba(200, 220, 250, 0.04) 60%,
-            transparent 64%,
-            transparent 100%
-          )`
-        }}
-      />
+      
 
       {/* Blur overlay with thin diagonal cutout - less blur */}
       <div
@@ -81,7 +66,7 @@ function App() {
       />
 
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-transparent border-b border-white/5">
+      <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-transparent border-b border-white/5 animate-fade-in" style={{ animationDelay: '0.2s' }}>
         <div className="max-w-[1400px] mx-auto h-full px-8 flex items-center justify-between">
           <span className="text-white font-serif text-2xl font-extrabold italic tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">PolyIndex</span>
           <button className="px-4 py-1.5 bg-transparent border border-white/20 text-white rounded-lg text-sm font-medium hover:bg-white/5">
@@ -96,7 +81,7 @@ function App() {
           {/* Dashboard Layout */}
           <div className="flex gap-6 flex-1 min-h-0">
             {/* Left Sidebar */}
-            <div className="border-r border-white/10">
+            <div className="border-r border-white/10 animate-fade-in" style={{ animationDelay: '0.4s' }}>
               <Sidebar />
             </div>
 
@@ -104,16 +89,16 @@ function App() {
             <div className="flex flex-col gap-3 flex-1 min-h-0">
               {/* Top Row: Balance + Bets */}
               <div className="flex gap-4 items-stretch flex-1 min-h-0">
-                <div className="flex-[3] min-w-0">
+                <div className="flex-[3] min-w-0 animate-fade-in" style={{ animationDelay: '0.6s' }}>
                   <BalanceCard />
                 </div>
-                <div className="flex-[2] min-w-0">
+                <div className="flex-[2] min-w-0 animate-fade-in" style={{ animationDelay: '0.7s' }}>
                   <BetsList />
                 </div>
               </div>
 
               {/* Bottom: Index Table with fade */}
-              <div className="relative flex-1 min-h-0 overflow-hidden">
+              <div className="relative flex-1 min-h-0 overflow-hidden animate-fade-in" style={{ animationDelay: '0.8s' }}>
                 <IndexTable />
                 {/* Fade overlay */}
                 <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#111d2e] via-[#111d2e]/80 to-transparent pointer-events-none" />
@@ -121,8 +106,18 @@ function App() {
             </div>
           </div>
 
+          {/* Spotlight effects for hero section */}
+          <Spotlight
+            className="-top-40 left-0 md:left-60 md:-top-20"
+            fill="#6fd1b0"
+          />
+          <Spotlight
+            className="-top-40 right-0 md:right-80 md:-top-32"
+            fill="#ba96e3"
+          />
+
           {/* Hero Text Overlay - above lighting effects */}
-          <div className="absolute bottom-24 left-8 right-8 pointer-events-none z-[200]">
+          <div className="absolute bottom-24 left-8 right-8 pointer-events-none z-[200] animate-fade-in" style={{ animationDelay: '1s' }}>
             <div className="max-w-[1400px] mx-auto pl-32 mb-6">
               <h1 className="text-5xl md:text-7xl text-white font-serif font-bold leading-tight tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
                 A <span className="italic">higher standard</span>
