@@ -66,7 +66,7 @@ function SidebarIcon({ type }: { type: string }) {
 
 export function Sidebar() {
   return (
-    <div className="w-48 py-2 select-none pr-4">
+    <div className="w-48 py-2 select-none pr-4 relative">
       <ul className="flex flex-col">
         {menuItems.map((item) => (
           <li
@@ -82,6 +82,8 @@ export function Sidebar() {
           </li>
         ))}
       </ul>
+      {/* Bottom fade overlay */}
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#111d2e] via-[#111d2e]/60 to-transparent pointer-events-none" />
     </div>
   );
 }

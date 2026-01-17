@@ -9,7 +9,7 @@ export function BalanceCard() {
         </div>
         <div className="flex gap-1">
           <button className="px-3 py-1.5 rounded-md text-xs font-medium bg-gray-700 text-white">Balance</button>
-          <button className="px-3 py-1.5 rounded-md text-xs font-medium text-gray-400 hover:text-white">Card Spend</button>
+          <button className="px-3 py-1.5 rounded-md text-xs font-medium text-gray-400 hover:text-white">Profits</button>
           <button className="px-3 py-1.5 rounded-md text-xs font-medium text-gray-400 hover:text-white">This Week</button>
         </div>
       </div>

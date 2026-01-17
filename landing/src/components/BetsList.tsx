@@ -62,7 +62,7 @@ export function BetsList() {
               </div>
               <div className="text-[10px] text-gray-500 flex items-center justify-end gap-1">
                 <img src="/polylogo.png" alt="Poly Index" className="w-3 h-3 object-contain" />
-                Poly Index
+                PolyIndex
               </div>
             </div>
           </div>

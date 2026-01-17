@@ -5,17 +5,88 @@ import { IndexTable } from './components/IndexTable';
 
 function App() {
   return (
-    <div className="h-screen bg-[#111d2e] overflow-hidden relative">
+    <div className="h-screen bg-[#0d1926] overflow-hidden relative">
+      {/* Thin diagonal light beam - shifted right, more white-blue */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[42]"
+        style={{
+          background: `linear-gradient(
+            45deg,
+            transparent 0%,
+            transparent 38%,
+            rgba(200, 220, 250, 0.04) 42%,
+            rgba(220, 235, 255, 0.14) 48%,
+            rgba(240, 248, 255, 0.2) 52%,
+            rgba(220, 235, 255, 0.14) 56%,
+            rgba(200, 220, 250, 0.04) 60%,
+            transparent 64%,
+            transparent 100%
+          )`
+        }}
+      />
+
+      {/* Blur overlay with thin diagonal cutout - less blur */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[41]"
+        style={{
+          backdropFilter: 'blur(1px)',
+          WebkitBackdropFilter: 'blur(1px)',
+          maskImage: `linear-gradient(
+            45deg,
+            black 0%,
+            black 40%,
+            transparent 48%,
+            transparent 56%,
+            black 64%,
+            black 100%
+          )`,
+          WebkitMaskImage: `linear-gradient(
+            45deg,
+            black 0%,
+            black 40%,
+            transparent 48%,
+            transparent 56%,
+            black 64%,
+            black 100%
+          )`
+        }}
+      />
+
+      {/* Darkening overlay - more blue tint */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[40]"
+        style={{
+          background: `linear-gradient(
+            45deg,
+            rgba(8, 18, 32, 0.3) 0%,
+            rgba(8, 18, 32, 0.2) 40%,
+            transparent 48%,
+            transparent 56%,
+            rgba(8, 18, 32, 0.2) 64%,
+            rgba(8, 18, 32, 0.4) 80%,
+            rgba(8, 18, 32, 0.55) 100%
+          )`
+        }}
+      />
+
+      {/* Bottom-left blur for hero text area */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[39]"
+        style={{
+          backdropFilter: 'blur(3px)',
+          WebkitBackdropFilter: 'blur(3px)',
+          maskImage: `radial-gradient(ellipse 60% 50% at 20% 80%, black 0%, transparent 70%)`,
+          WebkitMaskImage: `radial-gradient(ellipse 60% 50% at 20% 80%, black 0%, transparent 70%)`
+        }}
+      />
+
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-[#111d2e]/95 backdrop-blur-sm border-b border-white/5">
+      <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-transparent border-b border-white/5">
         <div className="max-w-[1400px] mx-auto h-full px-8 flex items-center justify-between">
-          <span className="text-white font-serif text-xl font-bold italic">PolyIndex</span>
-          <div className="flex items-center gap-4">
-            <a href="#" className="text-sm text-gray-400 hover:text-white">Log in</a>
-            <button className="px-4 py-1.5 bg-transparent border border-white/20 text-white rounded-lg text-sm font-medium hover:bg-white/5">
-              Get Started
-            </button>
-          </div>
+          <span className="text-white font-serif text-2xl font-extrabold italic tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">PolyIndex</span>
+          <button className="px-4 py-1.5 bg-transparent border border-white/20 text-white rounded-lg text-sm font-medium hover:bg-white/5">
+            Get Started
+          </button>
         </div>
       </header>
 
@@ -50,28 +121,31 @@ function App() {
             </div>
           </div>
 
-          {/* Hero Text Overlay */}
-          <div className="absolute bottom-24 left-8 right-8 pointer-events-none">
-            <div className="max-w-[1400px] mx-auto pl-12">
-              <div className="mb-6">
-                <h1 className="text-5xl md:text-6xl text-white font-serif leading-tight">
-                  A <span className="italic">higher standard</span>
-                </h1>
-                <h1 className="text-5xl md:text-6xl text-white font-serif leading-tight">
-                  in Polymarket betting.
-                </h1>
-                <p className="text-gray-400 mt-4 text-lg">
-                  Diversify your risk, creating your own index funds of literally anything.
-                </p>
-              </div>
+          {/* Hero Text Overlay - above lighting effects */}
+          <div className="absolute bottom-24 left-8 right-8 pointer-events-none z-[200]">
+            <div className="max-w-[1400px] mx-auto pl-32 mb-6">
+              <h1 className="text-5xl md:text-7xl text-white font-serif font-bold leading-tight tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
+                A <span className="italic">higher standard</span>
+              </h1>
+              <h1 className="text-5xl md:text-7xl text-white font-serif font-bold leading-tight tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
+                in Polymarket betting.
+              </h1>
+              <p className="text-gray-300 mt-5 text-lg font-medium">
+                Diversify your risk, creating your own agentic index funds on any bet.
+              </p>
+            </div>
 
-              {/* Chrome Download Button - Centered */}
-              <div className="flex justify-center">
-                <button className="pointer-events-auto flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white/90 font-medium hover:bg-white/15 hover:border-white/30 transition-all duration-200 shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
-                  <img src="/chrome.png" alt="Chrome" className="w-8 h-5 rounded-full" />
-                  Download for Chrome
-                </button>
-              </div>
+            {/* Chrome Download Button - Centered on page */}
+            <div className="flex justify-center">
+              <button
+                className="pointer-events-auto flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-white/10 text-white font-medium hover:border-white/30 hover:brightness-125 hover:shadow-[0_8px_32px_rgba(70,100,140,0.3)] transition-all duration-200 shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+                style={{
+                  background: 'linear-gradient(90deg, #455a70 0%, #2f3d4d 50%, #455a70 100%)'
+                }}
+              >
+                <img src="/chrome.png" alt="Chrome" className="w-8 h-5 rounded-full" />
+                Download for Chrome
+              </button>
             </div>
           </div>
         </div>
