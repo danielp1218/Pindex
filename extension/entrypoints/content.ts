@@ -1,7 +1,6 @@
 export default defineContentScript({
   matches: ['*://*.polymarket.com/*'],
   main() {
-    console.log("afweffwefewfewfew")
     const checkAndOpenPopup = () => {
       if (window.location.pathname.startsWith('/event/')) {
         browser.runtime.sendMessage({ action: 'openPopup' });
