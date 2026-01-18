@@ -161,32 +161,32 @@ export function FeaturesSection() {
   const y2 = useTransform(scrollYProgress, [0, 1], [0, 100]);
 
   return (
-    <section 
+    <section
       ref={containerRef}
-      className="min-h-screen py-16 md:py-32 px-4 md:px-8 relative overflow-hidden bg-[#0d1926]"
+      className="min-h-screen py-16 md:py-32 relative overflow-hidden bg-[#0d1926]"
     >
       {/* Ambient Background Effects */}
       <div className="absolute inset-0 pointer-events-none">
-        <motion.div 
+        <motion.div
           style={{ y: y1 }}
-          className="absolute top-[10%] left-[5%] w-[400px] h-[400px] bg-[#6fd1b0]/10 rounded-full blur-[120px]" 
+          className="absolute top-[10%] left-[5%] w-[400px] h-[400px] bg-[#6fd1b0]/10 rounded-full blur-[120px]"
         />
-        <motion.div 
+        <motion.div
           style={{ y: y2 }}
-          className="absolute bottom-[10%] right-[5%] w-[500px] h-[500px] bg-[#ba96e3]/10 rounded-full blur-[150px]" 
+          className="absolute bottom-[10%] right-[5%] w-[500px] h-[500px] bg-[#ba96e3]/10 rounded-full blur-[150px]"
         />
       </div>
 
       {/* Grid Pattern Overlay */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{ 
+        style={{
           backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
           backgroundSize: '40px 40px'
         }}
       />
 
-      <div className="max-w-[1400px] mx-auto relative z-10">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 relative z-10">
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
