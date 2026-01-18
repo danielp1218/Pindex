@@ -1,6 +1,6 @@
 {
-  "name": "wxt-react-starter",
-  "description": "manifest.json description",
+  "name": "pindex",
+  "description": "Pindex - Polymarket Index Extension",
   "private": true,
   "version": "0.0.0",
   "type": "module",
