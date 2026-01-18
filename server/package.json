@@ -5,7 +5,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
-    "build:packages": "cd ./packages/relations-engine && npm run build"
+    "build:packages": "cd ./packages/relations-engine && npm i && npm run build"
   },
   "dependencies": {
     "@arizeai/openinference-instrumentation-openai": "^4.0.5",
@@ -19,8 +19,7 @@
     "@pindex/relations-engine": "file:packages/relations-engine",
     "dotenv": "^16.4.7",
     "hono": "^4.11.4",
-    "openai": "^6.16.0",
-    "tsc": "^2.0.4"
+    "openai": "^6.16.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.9",
