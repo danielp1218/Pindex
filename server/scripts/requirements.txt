@@ -1,0 +1,7 @@
+arize-phoenix>=8.0.0
+openinference-instrumentation-openai
+openai
+python-dotenv
+pandas
+requests
+nest_asyncio
