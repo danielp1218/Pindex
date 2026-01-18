@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Polyindex API Route Tester</title>
+    <title>Pindex API Route Tester</title>
     <style>
         * {
             margin: 0;
@@ -149,7 +149,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Polyindex API Route Tester</h1>
+        <h1>Pindex API Route Tester</h1>
 
         <div class="config">
             <strong>Base URL:</strong>
@@ -170,11 +170,34 @@
             <h2>Related Bets</h2>
 
             <div class="controls">
-                <input type="text" id="relatedBetsMarketId" placeholder="CLOB Market ID (condition_id)" style="flex: 2;">
+                <input type="text" id="relatedBetsMarketId" placeholder="CLOB Market ID or Polymarket URL" style="flex: 2;">
                 <button onclick="submitRelatedBets()">POST /api/related-bets</button>
             </div>
             <div id="submitRelatedBetsResponse" class="response empty">No response yet</div>
             <div id="relatedBetsLogResponse" class="response empty" style="margin-top: 10px;">No logs yet</div>
+        </div>
+
+        <!-- Dependencies -->
+        <div class="section">
+            <h2>Dependencies</h2>
+
+            <div class="controls">
+                <textarea id="dependenciesPayload" placeholder="JSON payload for /api/dependencies" style="min-height: 260px;">{
+  "url": "https://polymarket.com/event/will-trump-acquire-greenland-before-2027",
+  "weight": 1.0,
+  "decision": "yes",
+  "visited": [],
+  "volatility": 1.0,
+  "options": {
+    "epsilon": 0.01
+  }
+}</textarea>
+            </div>
+            <div class="controls">
+                <button onclick="submitDependencies()">POST /api/dependencies</button>
+            </div>
+            <div id="dependenciesResponse" class="response empty">No response yet</div>
+            <div id="dependenciesLogResponse" class="response empty" style="margin-top: 10px;">No logs yet</div>
         </div>
 
         <!-- Relations Analyzer -->
@@ -300,7 +323,7 @@
         async function submitRelatedBets() {
             const marketId = document.getElementById('relatedBetsMarketId').value;
             if (!marketId) {
-                alert('Please enter a market ID');
+                alert('Please enter a market ID or URL');
                 return;
             }
 
@@ -309,6 +332,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream',
                     },
                     body: JSON.stringify({ marketId })
                 });
@@ -383,6 +407,97 @@
                 }
             } catch (error) {
                 displayResponse('submitRelatedBetsResponse', { error: error.message }, true);
+            }
+        }
+
+        async function submitDependencies() {
+            const payloadText = document.getElementById('dependenciesPayload').value;
+            let payload;
+
+            try {
+                payload = JSON.parse(payloadText);
+            } catch (error) {
+                displayResponse('dependenciesResponse', { error: 'Invalid JSON payload' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${getBaseUrl()}/api/dependencies`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const logElement = document.getElementById('dependenciesLogResponse');
+                const logs = [];
+
+                logElement.className = 'response';
+                logElement.textContent = 'Streaming...';
+
+                if (!response.body) {
+                    displayResponse('dependenciesResponse', { error: 'No response body' }, true);
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        break;
+                    }
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const parts = buffer.split('\n\n');
+                    buffer = parts.pop() || '';
+
+                    for (const part of parts) {
+                        const line = part
+                            .split('\n')
+                            .find(segment => segment.startsWith('data:'));
+                        if (!line) {
+                            continue;
+                        }
+
+                        const data = line.slice(5).trim();
+                        if (data.startsWith('log - ')) {
+                            const payload = data.slice(6);
+                            let logText = payload;
+                            try {
+                                const parsed = JSON.parse(payload);
+                                logText = `[${parsed.level}] ${parsed.message}`;
+                                if (parsed.meta !== undefined) {
+                                    logText += ` ${JSON.stringify(parsed.meta)}`;
+                                }
+                            } catch (error) {
+                                // Keep raw payload if JSON parsing fails
+                            }
+
+                            logs.push(logText);
+                            logElement.textContent = logs.join('\n');
+                            continue;
+                        }
+
+                        if (data.startsWith('final - ')) {
+                            const payload = data.slice(8);
+                            let finalData = payload;
+                            try {
+                                finalData = JSON.parse(payload);
+                            } catch (error) {
+                                // Keep raw payload if JSON parsing fails
+                            }
+
+                            displayResponse('dependenciesResponse', finalData, !response.ok);
+                        }
+                    }
+                }
+            } catch (error) {
+                displayResponse('dependenciesResponse', { error: error.message }, true);
             }
         }
 

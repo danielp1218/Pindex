@@ -1,16 +1,12 @@
 {
-  "name": "polyindex-server",
-  "version": "1.0.0",
+  "name": "server",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "build:packages": "cd packages/relations-engine && npm i && npm run build",
-    "build:all": "npm run build:packages && npm run build",
-    "start": "node dist/index.js",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "test:watch": "vitest --watch"
+    "dev:wrangler": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "build:packages": "cd ./packages/relations-engine && npm run build"
   },
   "dependencies": {
     "@arizeai/openinference-instrumentation-openai": "^2.3.1",
@@ -21,14 +17,15 @@
     "@opentelemetry/exporter-trace-otlp-proto": "^0.210.0",
     "@opentelemetry/sdk-node": "^0.210.0",
     "@opentelemetry/sdk-trace-node": "^2.4.0",
-    "@polyindex/relations-engine": "file:packages/relations-engine",
+    "@pindex/relations-engine": "file:packages/relations-engine",
     "dotenv": "^16.4.7",
     "hono": "^4.11.4",
-    "openai": "^4.78.1"
+    "openai": "^6.16.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.5",
+    "@types/node": "^25.0.9",
     "tsx": "^4.21.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.9.3",
+    "wrangler": "^4.4.0"
   }
 }

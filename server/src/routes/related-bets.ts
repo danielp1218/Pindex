@@ -78,13 +78,20 @@ relatedBetsRouter.post('/', (c) => {
 
       // Find related bets (this streams results but we'll collect them all)
       const relatedBets = [];
-      for await (const bet of findRelatedBets(sourceMarket, visitedSlugs || [], logger)) {
+      for await (const bet of findRelatedBets(sourceMarket, visitedSlugs || [], c, logger)) {
         relatedBets.push(bet);
         logger('log', 'related-bet-found', {
           marketId: bet.marketId,
           question: bet.market.question,
           relationship: bet.relationship,
         });
+      }
+
+      // Cut down to 4 if there are more than 4
+      const finalRelatedBets = relatedBets.length > 4 ? relatedBets.slice(0, 4) : relatedBets;
+      
+      if (relatedBets.length > 4) {
+        logger('log', `Cut down from ${relatedBets.length} to 4 related bets`);
       }
 
       // Stream final results in clean format
@@ -95,7 +102,7 @@ relatedBetsRouter.post('/', (c) => {
             question: sourceMarket.question,
             slug: sourceMarket.market_slug,
           },
-          relatedBets: relatedBets.map(bet => {
+          relatedBets: finalRelatedBets.map(bet => {
             // Use event slug if available (for markets from events), otherwise market slug
             const slug = bet.eventSlug || bet.market.market_slug;
             const url = slug ? `https://polymarket.com/event/${slug}` : undefined;

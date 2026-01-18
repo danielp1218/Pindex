@@ -1,12 +1,9 @@
 import { Hono } from 'hono';
 import { priceRelationSet } from '../services/relation-analyzer';
-import type {
-  PricingOptions,
-  RelationInput,
-  RelationType,
-} from '@polyindex/relations-engine';
+import { priceRelations, type PricingOptions, type RelationInput, type RelationType } from '@pindex/relations-engine';
 import type { GraphNodeInput } from '../services/graph-outcomes';
 import { evaluateGraph } from '../services/graph-outcomes';
+import { priceCompactDependants } from '../services/compact-relations';
 
 export const relationsRouter = new Hono();
 
@@ -133,34 +130,37 @@ function validateGraphNode(
   }
 }
 
-function clampProbability(value: number): number {
-  if (value < 0) {
-    return 0;
-  }
-  if (value > 1) {
-    return 1;
-  }
-  return value;
-}
+function buildRelationsFromGraph(root: GraphNodeInput): RelationInput[] {
+  const relations: RelationInput[] = [];
+  const stack: GraphNodeInput[] = [root];
 
-function targetProbabilityForRelation(
-  relation: RelationType,
-  rootProbability: number,
-  dependantProbability: number
-): number {
-  switch (relation) {
-    case 'IMPLIES':
-      return Math.min(dependantProbability, rootProbability);
-    case 'SUBEVENT':
-    case 'CONDITIONED_ON':
-      return Math.max(dependantProbability, rootProbability);
-    case 'CONTRADICTS':
-      return Math.min(dependantProbability, 1 - rootProbability);
-    case 'PARTITION_OF':
-    case 'WEAK_SIGNAL':
-    default:
-      return dependantProbability;
+  while (stack.length > 0) {
+    const parent = stack.pop();
+    if (!parent) {
+      continue;
+    }
+
+    for (const child of parent.children ?? []) {
+      if (child.relation) {
+        relations.push({
+          relation: child.relation,
+          root: {
+            id: parent.id,
+            probabilityYes: parent.probability,
+            weight: parent.weight,
+          },
+          related: {
+            id: child.id,
+            probabilityYes: child.probability,
+            weight: child.weight,
+          },
+        });
+      }
+      stack.push(child);
+    }
   }
+
+  return relations;
 }
 
 function buildRelationsFromCompact(payload: CompactRelationsPayload) {
@@ -228,66 +228,22 @@ relationsRouter.post('/price', async (c) => {
       );
     }
 
-    const rootDecision = normalizeDecision(root.decision);
     const rootWeight = isWeight(root.weight) ? root.weight : 1;
-    const volatility = isVolatility(payload.volatility) ? payload.volatility : 1;
-    const baseEpsilon = payload.options?.epsilon ?? 0.01;
-    const effectiveEpsilon =
-      volatility > 0
-        ? Math.max(0, Math.min(0.99, baseEpsilon / volatility))
-        : 1;
-    const riskExponent = volatility > 0 ? 1 / volatility : 1;
-
-    const partitionDependants = dependants.filter(
-      dependant => dependant.relation === 'PARTITION_OF'
-    );
-    const partitionTargets = new Map<string, number>();
-
-    if (partitionDependants.length > 0) {
-      const sum = partitionDependants.reduce(
-        (total, dependant) => total + dependant.probability,
-        0
-      );
-      if (sum > 0) {
-        const scale = root.probability / sum;
-        for (const dependant of partitionDependants) {
-          partitionTargets.set(
-            dependant.id,
-            clampProbability(dependant.probability * scale)
-          );
-        }
+    const result = priceCompactDependants(
+      {
+        probability: root.probability,
+        weight: rootWeight,
+        decision: root.decision,
+      },
+      dependants,
+      {
+        volatility: payload.volatility,
+        epsilon: payload.options?.epsilon,
       }
-    }
+    );
 
     const response = {
-      dependants: dependants.map(dependant => {
-        const targetProbability =
-          partitionTargets.get(dependant.id) ??
-          targetProbabilityForRelation(
-            dependant.relation,
-            root.probability,
-            dependant.probability
-          );
-        const edge = targetProbability - dependant.probability;
-        const adjustedEdge = Math.max(0, Math.abs(edge) - effectiveEpsilon);
-        const normalizedEdge =
-          1 - effectiveEpsilon > 0
-            ? Math.min(1, adjustedEdge / (1 - effectiveEpsilon))
-            : 0;
-        const decision =
-          adjustedEdge > 0 ? (edge > 0 ? 'yes' : 'no') : rootDecision;
-        const weight =
-          adjustedEdge > 0
-            ? rootWeight * Math.pow(normalizedEdge, riskExponent)
-            : 0;
-
-        return {
-          id: dependant.id,
-          weight,
-          decision,
-          relation: dependant.relation,
-        };
-      }),
+      dependants: result.dependants,
     };
 
     return c.json(response);
@@ -333,5 +289,25 @@ relationsRouter.post('/graph', async (c) => {
   }
 
   const result = evaluateGraph(payload);
+  return c.json(result);
+});
+
+relationsRouter.post('/graph/price', async (c) => {
+  const payload = await c.req.json<GraphNodeInput>();
+  const errors: GraphValidationError[] = [];
+  const seen = new Set<string>();
+
+  validateGraphNode(payload, true, 'root', seen, errors);
+
+  if (errors.length > 0) {
+    return c.json({ error: 'Invalid graph payload', details: errors }, 400);
+  }
+
+  const relations = buildRelationsFromGraph(payload);
+  if (relations.length === 0) {
+    return c.json({ error: 'Graph must include at least one relation.' }, 400);
+  }
+
+  const result = priceRelations(relations);
   return c.json(result);
 });

@@ -8,20 +8,24 @@ import {
 } from './polymarket-api';
 import { fetchEventMarkets } from './url-parser';
 import { logMessage, type Logger } from './logger';
+import { Context } from 'hono';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = (c: Context) => {
+  return new OpenAI({
+    apiKey: c.env.OPENAI_API_KEY,
+  });
+}
 
 /**
  * Generate search keywords from a market using LLM
  */
 async function generateSearchKeywords(
   market: PolymarketMarket,
+  c: Context,
   logger?: Logger
 ): Promise<string[]> {
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await openai(c).chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -81,12 +85,13 @@ Return JSON array of 2-4 short keywords:
 }
 
 /**
- * Use LLM to select 3-4 most relevant events from search results, filtering out visitedSlugs
+ * Use LLM to select 8 most relevant events from search results, filtering out visitedSlugs
  */
 async function selectRelevantEvents(
   market: PolymarketMarket,
   events: PolymarketEvent[],
   visitedSlugs: string[] = [],
+  c: Context,
   logger?: Logger
 ): Promise<string[]> {
   // Filter out visited slugs first
@@ -102,7 +107,7 @@ async function selectRelevantEvents(
       `Slug: ${e.slug}\nTitle: ${e.title}\nDescription: ${e.description?.substring(0, 150) || 'N/A'}`
     ).join('\n\n---\n\n');
 
-    const completion = await openai.chat.completions.create({
+    const completion = await openai(c).chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -112,7 +117,7 @@ async function selectRelevantEvents(
 Source Market: "${market.question}"
 Description: ${market.description?.substring(0, 200) || 'N/A'}
 
-Select 3-4 events that are MOST RELEVANT to finding related markets. Look for:
+Select 8 events that are MOST RELEVANT to finding related markets. Look for:
 - Same topic/domain (politics, sports, crypto, etc.)
 - Related outcomes or dependencies
 - Similar timeframes
@@ -120,12 +125,12 @@ Select 3-4 events that are MOST RELEVANT to finding related markets. Look for:
 
 Return JSON with array of slugs:
 {
-  "slugs": ["slug-1", "slug-2", "slug-3"]
+  "slugs": ["slug-1", "slug-2", "slug-3", ...]
 }`
         },
         {
           role: 'user',
-          content: `Available events:\n\n${eventsContext}\n\nSelect 3-4 most relevant event slugs:`
+          content: `Available events:\n\n${eventsContext}\n\nSelect up to 8 most relevant event slugs:`
         }
       ],
       response_format: { type: 'json_object' },
@@ -136,7 +141,7 @@ Return JSON with array of slugs:
     if (!content) return [];
 
     const result = JSON.parse(content);
-    const selectedSlugs = (result.slugs || []).slice(0, 4); // Cap at 4
+    const selectedSlugs = (result.slugs || []).slice(0, 8); // Cap at 8
     logMessage(
       logger,
       'log',
@@ -146,8 +151,8 @@ Return JSON with array of slugs:
     return selectedSlugs;
   } catch (error) {
     logMessage(logger, 'error', 'Error selecting relevant events', error);
-    // Fallback: return first 3 unvisited event slugs
-    return unvisitedEvents.slice(0, 3).map(e => e.slug);
+    // Fallback: return first 8 unvisited event slugs
+    return unvisitedEvents.slice(0, 8).map(e => e.slug);
   }
 }
 
@@ -156,10 +161,11 @@ Return JSON with array of slugs:
  */
 async function getMarketCategory(
   market: PolymarketMarket,
+  c: Context,
   logger?: Logger
 ): Promise<string> {
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await openai(c).chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -199,8 +205,9 @@ export interface FoundRelatedBet {
 }
 
 
-function getMarketPercentages(
+export function getMarketPercentages(
   market: any,
+  c: Context,
   logger?: Logger
 ): { yes: number; no: number } {
   // Try tokens array first (CLOB format)
@@ -308,6 +315,7 @@ function getOutcomes(market: PolymarketMarket): string[] {
 export async function* findRelatedBets(
   sourceMarket: PolymarketMarket,
   visitedSlugs: string[] = [],
+  c: Context,
   logger?: Logger
 ): AsyncGenerator<FoundRelatedBet> {
   const MAX_RESULTS = 4; // Maximum number of related bets to return
@@ -321,7 +329,7 @@ export async function* findRelatedBets(
     logMessage(logger, 'log', 'Starting keyword-based event search...');
     
     // Step 1: Generate search keywords using LLM (returns array)
-    const keywords = await generateSearchKeywords(sourceMarket, logger);
+    const keywords = await generateSearchKeywords(sourceMarket, c, logger);
     
     // Step 2: Search for events using each keyword individually and combine results
     const allEvents: PolymarketEvent[] = [];
@@ -355,7 +363,7 @@ export async function* findRelatedBets(
     // Step 3: Fallback to category-based search if no results
     if (events.length === 0) {
       logMessage(logger, 'log', 'No events found, trying category-based fallback...');
-      const category = await getMarketCategory(sourceMarket, logger);
+      const category = await getMarketCategory(sourceMarket, c, logger);
       events = await searchEventsByCategory(category, logger);
       logMessage(
         logger,
@@ -364,12 +372,13 @@ export async function* findRelatedBets(
       );
     }
     
-    // Step 4: LLM selects 3-4 most relevant events, filtering out visited slugs
+    // Step 4: LLM selects 8 most relevant events, filtering out visited slugs
     if (events.length > 0) {
       const selectedSlugs = await selectRelevantEvents(
         sourceMarket,
         events,
         visitedSlugs,
+        c,
         logger
       );
       logMessage(
@@ -441,7 +450,7 @@ export async function* findRelatedBets(
   const seenMarketIds = new Set<string>();
 
   // Get source market probabilities for context
-  const sourcePercentages = getMarketPercentages(sourceMarket, logger);
+  const sourcePercentages = getMarketPercentages(sourceMarket, c, logger);
 
   // Multi-layer AI reasoning system
   const systemPrompt = `You are a strategic prediction market analyst finding ACTIONABLE related bets.
@@ -519,7 +528,7 @@ IMPORTANT:
 
     const batchContext = batch.map((m) => {
       const marketId = m.conditionId || m.condition_id || m.id;
-      const percentages = getMarketPercentages(m, logger);
+      const percentages = getMarketPercentages(m, c, logger);
       return `ID: ${marketId}
 Question: ${m.question}
 Odds: ${percentages.yes}% YES / ${percentages.no}% NO
@@ -527,7 +536,7 @@ Description: ${m.description?.substring(0, 150)}...`;
     }).join('\n\n---\n\n');
 
     try {
-      const completion = await openai.chat.completions.create({
+      const completion = await openai(c).chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
@@ -571,7 +580,7 @@ Description: ${m.description?.substring(0, 150)}...`;
           : 'WEAK_SIGNAL';
 
         // Get percentages
-        const percentages = getMarketPercentages(market, logger);
+        const percentages = getMarketPercentages(market, c, logger);
 
         yield {
           marketId,

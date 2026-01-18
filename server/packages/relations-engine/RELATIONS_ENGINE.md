@@ -21,7 +21,7 @@ import {
   analyzeRelations,
   priceRelations,
   calculateKellySizing,
-} from '@polyindex/relations-engine';
+} from '@pindex/relations-engine';
 ```
 
 ## Relation Types (Directional)

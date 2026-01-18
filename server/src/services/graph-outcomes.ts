@@ -1,4 +1,4 @@
-import type { RelationType } from '@polyindex/relations-engine';
+import type { RelationType } from '@pindex/relations-engine';
 
 export type Decision = 'yes' | 'no';
 
