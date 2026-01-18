@@ -31,3 +31,12 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+
+# Python optimization scripts
+scripts/.venv/
+scripts/venv/
+scripts/output/
+scripts/__pycache__/
+*.pyc
+*.pyo
+.python-version
