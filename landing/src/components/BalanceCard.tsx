@@ -1,16 +1,16 @@
 export function BalanceCard() {
   return (
-    <div className="bg-[#1a2332]/80 backdrop-blur-sm rounded-xl p-5 w-full h-full border border-white/10">
-      <div className="flex justify-between items-start mb-4">
+    <div className="bg-[#1a2332]/80 backdrop-blur-sm rounded-xl p-4 md:p-5 w-full h-full border border-white/10">
+      <div className="flex flex-col md:flex-row justify-between items-start gap-3 md:gap-0 mb-4">
         <div className="flex items-baseline">
-          <span className="text-2xl" style={{ color: '#9ca3af' }}>$</span>
-          <span className="text-4xl font-semibold tracking-tight" style={{ color: '#9ca3af' }}>847,291</span>
-          <span className="text-xl" style={{ color: '#9ca3af' }}>.45</span>
+          <span className="text-xl md:text-2xl" style={{ color: '#9ca3af' }}>$</span>
+          <span className="text-3xl md:text-4xl font-semibold tracking-tight" style={{ color: '#9ca3af' }}>847,291</span>
+          <span className="text-lg md:text-xl" style={{ color: '#9ca3af' }}>.45</span>
         </div>
-        <div className="flex gap-1">
-          <button className="px-3 py-1.5 rounded-md text-xs font-medium bg-gray-700 text-white">Balance</button>
-          <button className="px-3 py-1.5 rounded-md text-xs font-medium text-gray-400 hover:text-white">Profits</button>
-          <button className="px-3 py-1.5 rounded-md text-xs font-medium text-gray-400 hover:text-white">This Week</button>
+        <div className="flex gap-1 flex-wrap">
+          <button className="px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs font-medium bg-gray-700 text-white">Balance</button>
+          <button className="px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs font-medium text-gray-400 hover:text-white">Profits</button>
+          <button className="px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs font-medium text-gray-400 hover:text-white">This Week</button>
         </div>
       </div>
 
@@ -58,8 +58,8 @@ export function BalanceCard() {
       </div>
 
       <div className="flex justify-between items-center pt-1 border-t border-gray-700/50">
-        <span className="text-sm text-gray-400">Available to spend</span>
-        <span className="text-lg font-semibold" style={{ color: '#9ca3af' }}>$524,180.00</span>
+        <span className="text-xs md:text-sm text-gray-400">Available to spend</span>
+        <span className="text-base md:text-lg font-semibold" style={{ color: '#9ca3af' }}>$524,180.00</span>
       </div>
     </div>
   );

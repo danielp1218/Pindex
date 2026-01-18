@@ -15,6 +15,7 @@ const MarketCard = ({
   glowColor = 'rgba(255,255,255,0.05)',
   hoverBorderOpacity = '20',
   showGlow = true,
+  relative = false,
 }: { 
   image?: string;
   title: string; 
@@ -28,11 +29,14 @@ const MarketCard = ({
   glowColor?: string;
   hoverBorderOpacity?: string;
   showGlow?: boolean;
+  relative?: boolean;
 }) => {
   return (
     <div
-      className="absolute top-0 right-0 group"
-      style={{ 
+      className={relative ? "relative group" : "absolute top-0 right-0 group"}
+      style={relative ? { 
+        zIndex: zIndex,
+      } : { 
         zIndex: zIndex,
         transform: `translate(${offsetX}px, ${offsetY}px)`,
       }}
@@ -47,7 +51,7 @@ const MarketCard = ({
       
       {/* Card - Enhanced Beauty */}
       <div 
-        className={`relative bg-[#1a2332]/90 backdrop-blur-2xl rounded-2xl p-5 border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.6)] transition-all duration-300 ${
+        className={`relative bg-[#1a2332]/90 backdrop-blur-2xl rounded-xl md:rounded-2xl p-3 md:p-5 border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.6)] transition-all duration-300 ${
           hoverBorderOpacity === '30' ? 'group-hover:border-white/30' : 'group-hover:border-white/20'
         }`}
         style={{ 
@@ -58,39 +62,40 @@ const MarketCard = ({
         {/* Subtle Shine Effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-2xl pointer-events-none" />
         
-        <div className="flex items-start gap-4 mb-4 relative z-10">
+        <div className="flex items-start gap-2 md:gap-4 mb-3 md:mb-4 relative z-10">
           {/* Profile Image - Smaller but nicer */}
-          <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-gradient-to-br from-gray-700/50 to-gray-900/50 border border-white/5 shadow-inner flex items-center justify-center">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden shrink-0 bg-gradient-to-br from-gray-700/50 to-gray-900/50 border border-white/5 shadow-inner flex items-center justify-center">
             {image ? (
               <img src={image} alt={title} className="w-full h-full object-cover" />
             ) : title.toLowerCase().includes('bitcoin') || title.toLowerCase().includes('btc') ? (
               <div className="w-full h-full bg-orange-500 flex items-center justify-center">
-                <span className="text-2xl font-bold">&#8383;</span>
+                <span className="text-xl md:text-2xl font-bold">&#8383;</span>
         </div>
             ) : title.toLowerCase().includes('spacex') || title.toLowerCase().includes('starship') ? (
               <img src="/betlist/spacex.png" alt="SpaceX" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-xl filter drop-shadow-sm">📊</span>
+              <span className="text-lg md:text-xl filter drop-shadow-sm">📊</span>
             )}
       </div>
 
           {/* Title and Percentage */}
           <div className="flex-1 min-w-0">
-            <h3 className="text-white font-semibold text-[13px] leading-tight mb-2.5 line-clamp-2 tracking-wide group-hover:text-white transition-colors">
+            <h3 className="text-white font-semibold text-[11px] md:text-[13px] leading-tight mb-2 md:mb-2.5 line-clamp-2 tracking-wide group-hover:text-white transition-colors">
         {title}
       </h3>
             
             {/* Percentage with circular progress - Smaller */}
-            <div className="flex items-center gap-2">
-              <div className="relative w-9 h-9">
-                <svg className="w-9 h-9 transform -rotate-90" viewBox="0 0 40 40">
+            <div className="flex items-center gap-1.5 md:gap-2">
+              <div className="relative w-7 h-7 md:w-9 md:h-9">
+                <svg className="w-7 h-7 md:w-9 md:h-9 transform -rotate-90" viewBox="0 0 40 40">
                   <circle
                     cx="20"
                     cy="20"
                     r="18"
                     fill="none"
                     stroke="rgba(255,255,255,0.05)"
-                    strokeWidth="3"
+                    strokeWidth="2.5"
+                    className="[stroke-width:2.5px] md:[stroke-width:3px]"
                   />
                   <motion.circle
                     initial={{ pathLength: 0 }}
@@ -101,38 +106,39 @@ const MarketCard = ({
                     r="18"
                     fill="none"
                     stroke={percentage >= 50 ? '#6fd1b0' : '#fca5a5'}
-                    strokeWidth="3"
+                    strokeWidth="2.5"
+                    className="[stroke-width:2.5px] md:[stroke-width:3px]"
                     strokeLinecap="round"
                     style={{ filter: `drop-shadow(0 0 4px ${percentage >= 50 ? '#6fd1b0' : '#fca5a5'}44)` }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-[11px] font-bold text-white/90">
+                  <span className="text-[9px] md:text-[11px] font-bold text-white/90">
                     {percentage}%
                   </span>
                 </div>
               </div>
-              <span className="text-[11px] text-gray-400 font-medium uppercase tracking-tighter opacity-70">chance</span>
+              <span className="text-[9px] md:text-[11px] text-gray-400 font-medium uppercase tracking-tighter opacity-70">chance</span>
             </div>
           </div>
         </div>
 
         {/* Yes/No Buttons - More Beautiful */}
-        <div className="flex gap-2 mb-4 relative z-10">
-          <button className="flex-1 py-2 px-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold uppercase tracking-wider hover:bg-emerald-500/20 transition-all active:scale-95 shadow-[0_4px_12px_rgba(16,185,129,0.1)]">
+        <div className="flex gap-1.5 md:gap-2 mb-3 md:mb-4 relative z-10">
+          <button className="flex-1 py-1.5 md:py-2 px-2 md:px-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] md:text-[11px] font-bold uppercase tracking-wider hover:bg-emerald-500/20 transition-all active:scale-95 shadow-[0_4px_12px_rgba(16,185,129,0.1)]">
             Yes
           </button>
-          <button className="flex-1 py-2 px-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-bold uppercase tracking-wider hover:bg-red-500/20 transition-all active:scale-95 shadow-[0_4px_12px_rgba(239,68,68,0.1)]">
+          <button className="flex-1 py-1.5 md:py-2 px-2 md:px-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] md:text-[11px] font-bold uppercase tracking-wider hover:bg-red-500/20 transition-all active:scale-95 shadow-[0_4px_12px_rgba(239,68,68,0.1)]">
             No
           </button>
         </div>
 
         {/* Volume Info - Smaller */}
-        <div className="flex items-center justify-between text-[10px] text-gray-500 pt-2.5 border-t border-white/5 relative z-10">
+        <div className="flex items-center justify-between text-[9px] md:text-[10px] text-gray-500 pt-2 md:pt-2.5 border-t border-white/5 relative z-10">
           <span className="font-medium tracking-tight opacity-60">{volume} Vol.</span>
           {frequency && (
             <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-2 md:w-2.5 h-2 md:h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               <span className="font-medium">{frequency}</span>
@@ -157,7 +163,7 @@ export function FeaturesSection() {
   return (
     <section 
       ref={containerRef}
-      className="min-h-screen py-32 px-8 relative overflow-hidden bg-[#0d1926]"
+      className="min-h-screen py-16 md:py-32 px-4 md:px-8 relative overflow-hidden bg-[#0d1926]"
     >
       {/* Ambient Background Effects */}
       <div className="absolute inset-0 pointer-events-none">
@@ -193,14 +199,14 @@ export function FeaturesSection() {
         </motion.div>
 
         {/* Bento Box Grid Layout - 2 on top, 1 on bottom */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {/* Top Left: Container 1 - Extension UI Showcase with Radial Blur */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="bg-[#1a2332]/80 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 group relative overflow-hidden h-[550px]"
+            className="bg-[#1a2332]/80 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 group relative overflow-hidden h-[400px] md:h-[550px]"
           >
             {/* Blurred background simulating Polymarket grid of cards */}
             <div className="absolute inset-0 blur-[5px] opacity-40 scale-105">
@@ -367,15 +373,15 @@ export function FeaturesSection() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[400px] bg-[#6fd1b0]/10 blur-[80px] rounded-full pointer-events-none" />
             
             {/* Extension Modal UI - positioned to show top, cut off at bottom */}
-            <div className="relative z-10 h-full flex flex-col items-center justify-start pt-16 p-6">
+            <div className="relative z-10 h-full flex flex-col items-center justify-start pt-8 md:pt-16 p-4 md:p-6">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-center mb-12"
+                className="text-center mb-6 md:mb-12"
               >
-                <h3 className="text-white text-xl md:text-2xl font-serif font-medium tracking-tight">
+                <h3 className="text-white text-lg md:text-xl lg:text-2xl font-serif font-medium tracking-tight">
                   blur out the noise, predict with knowledge.
                 </h3>
               </motion.div>
@@ -383,7 +389,7 @@ export function FeaturesSection() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 whileInView={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
-                className="w-full max-w-[340px] group-hover:-translate-y-4 transition-transform duration-300"
+                className="w-full max-w-[280px] md:max-w-[340px] group-hover:-translate-y-4 transition-transform duration-300"
               >
                 {/* Modal Container */}
                 <div className="bg-[#1a2332]/95 backdrop-blur-xl rounded-xl border border-white/10 shadow-[0_30px_80px_rgba(0,0,0,0.6)] overflow-hidden">
@@ -477,7 +483,7 @@ export function FeaturesSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-[#1a2332]/80 backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:border-white/20 transition-all duration-300 relative overflow-hidden h-[550px]"
+            className="bg-[#1a2332]/80 backdrop-blur-sm rounded-2xl p-4 md:p-8 border border-white/10 hover:border-white/20 transition-all duration-300 relative overflow-hidden h-[500px] md:h-[550px]"
           >
             {/* Background Golden Chart (replica of BalanceCard) */}
             <div className="absolute inset-0 opacity-10">
@@ -546,35 +552,70 @@ export function FeaturesSection() {
               {/* Main Recommendation Card - Top (Bigger) */}
               <motion.div
                 whileHover={{ y: -5, scale: 1.02 }}
-                className="relative bg-[#1a2332]/95 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:border-white/20 shadow-[0_30px_60px_rgba(0,0,0,0.6)] w-[60%] mb-6 group transition-all duration-300"
+                className="relative bg-[#1a2332]/95 backdrop-blur-2xl rounded-2xl p-4 md:p-6 border border-white/10 hover:border-white/20 shadow-[0_30px_60px_rgba(0,0,0,0.6)] w-full md:w-[60%] mb-4 md:mb-6 group transition-all duration-300"
               >
                 
-                <h4 className="text-white font-serif font-bold text-2xl mb-4">Accept</h4>
-                <p className="text-gray-400 text-sm leading-relaxed mb-6 font-medium">
+                <h4 className="text-white font-serif font-bold text-xl md:text-2xl mb-3 md:mb-4">Accept</h4>
+                <p className="text-gray-400 text-xs md:text-sm leading-relaxed mb-4 md:mb-6 font-medium">
                 SpaceX-linked Bitcoin activity has historically coincided with BTC volatility spikes. Cross-asset momentum suggests a <span className="text-[#6fd1b0]">4.2% alpha opportunity</span>                </p>
                 
-                <div className="flex gap-3">
-                  <button className="flex-1 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold uppercase tracking-wider hover:bg-emerald-500/20 transition-all">
+                <div className="flex gap-2 md:gap-3">
+                  <button className="flex-1 py-2 md:py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs md:text-sm font-bold uppercase tracking-wider hover:bg-emerald-500/20 transition-all">
                     Accept
                   </button>
-                  <button className="flex-1 py-3 rounded-xl bg-gray-500/10 border border-white/5 text-gray-400 text-sm font-bold uppercase tracking-wider hover:bg-white/5 transition-all">
+                  <button className="flex-1 py-2 md:py-3 rounded-xl bg-gray-500/10 border border-white/5 text-gray-400 text-xs md:text-sm font-bold uppercase tracking-wider hover:bg-white/5 transition-all">
                     Reject
                   </button>
                 </div>
               </motion.div>
 
               {/* Supporting Secondary Card - Bottom (Smaller) */}
-              <MarketCard
-                  title="SpaceX Starship Launch - Will the next mission succeed?"
-                  percentage={7}
-                  volume="$847k"
-                  zIndex={10}
-                  offsetY={250}
-                  offsetX={-150}
-                  glowColor="#6fd1b0"
-                  hoverBorderOpacity="30"
-                  showGlow={false}
-                />
+              {/* Mobile: Flex layout with full MarketCards */}
+              <div className="flex gap-2 md:hidden mt-4 relative">
+                <div className="flex-1 min-w-0">
+                  <MarketCard
+                    title="SpaceX Starship Launch - Will the next mission succeed?"
+                    percentage={7}
+                    volume="$847k"
+                    zIndex={10}
+                    offsetY={0}
+                    offsetX={0}
+                    width="100%"
+                    glowColor="#6fd1b0"
+                    hoverBorderOpacity="30"
+                    showGlow={false}
+                    relative={true}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <MarketCard
+                    title="Bitcoin Price Prediction - Will BTC exceed $200k by end of year?"
+                    percentage={56}
+                    volume="$1.7m"
+                    zIndex={10}
+                    offsetY={0}
+                    offsetX={0}
+                    width="100%"
+                    glowColor="#6fd1b0"
+                    hoverBorderOpacity="30"
+                    showGlow={false}
+                    relative={true}
+                  />
+                </div>
+              </div>
+              {/* Desktop: Absolute positioning */}
+              <div className="hidden md:block">
+                <MarketCard
+                    title="SpaceX Starship Launch - Will the next mission succeed?"
+                    percentage={7}
+                    volume="$847k"
+                    zIndex={10}
+                    offsetY={250}
+                    offsetX={-150}
+                    glowColor="#6fd1b0"
+                    hoverBorderOpacity="30"
+                    showGlow={false}
+                  />
                 <MarketCard
                   title="Bitcoin Price Prediction - Will BTC exceed $200k by end of year?"
                   percentage={56}
@@ -586,9 +627,10 @@ export function FeaturesSection() {
                   hoverBorderOpacity="30"
                   showGlow={false}
                 />
+              </div>
 
-              <div className="absolute bottom-0 left-0 max-w-[240px]">
-                <h3 className="text-xl font-serif  text-white leading-tight">
+              <div className="absolute bottom-0 left-0 max-w-[200px] md:max-w-[240px]">
+                <h3 className="text-base md:text-xl font-serif text-white leading-tight">
                   link correlations, <br />
                   play with less risk.
                 </h3>
@@ -602,7 +644,7 @@ export function FeaturesSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="bg-[#1a2332]/80 backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:border-white/20 transition-all duration-300 relative overflow-hidden md:col-span-2"
+            className="bg-[#1a2332]/80 backdrop-blur-sm rounded-2xl p-4 md:p-8 border border-white/10 hover:border-white/20 transition-all duration-300 relative overflow-hidden md:col-span-2"
           >
           {/* Floating particle effects behind cards */}
           <div className="absolute inset-0 -z-10 overflow-visible">
@@ -629,16 +671,17 @@ export function FeaturesSection() {
           </div>
 
             {/* Staircase Stacked Cards Container - Top Right */}
-            <div className="relative min-h-[500px] flex items-start justify-end pr-8 pt-8">
-              <div className="relative" style={{ width: '380px', height: '450px' }}>
+            <div className="relative min-h-[400px] md:min-h-[500px] flex items-start justify-end pr-4 md:pr-8 pt-4 md:pt-8">
+              <div className="relative" style={{ width: '100%', maxWidth: '380px', height: 'auto', minHeight: '350px' }}>
                 {/* Bottom Card - Bottom left of staircase */}
                 <MarketCard
                   title=" Starship Launch - Will the next mission succeed?"
                   percentage={7}
                   volume="$847k"
                   zIndex={10}
-                  offsetY={120}
-                  offsetX={-80}
+                  offsetY={80}
+                  offsetX={-40}
+                  width="200px"
                   glowColor="#6fd1b0"
                 />
 
@@ -649,8 +692,9 @@ export function FeaturesSection() {
                   volume="$1.5m"
                   frequency="Monthly"
                   zIndex={20}
-                  offsetY={60}
-                  offsetX={-40}
+                  offsetY={40}
+                  offsetX={-20}
+                  width="200px"
                   glowColor="#ba96e3"
                 />
 
@@ -663,6 +707,7 @@ export function FeaturesSection() {
                   zIndex={30}
                   offsetY={0}
                   offsetX={0}
+                  width="200px"
                   glowColor="#6fd1b0"
                 />
               </div>
@@ -675,14 +720,14 @@ export function FeaturesSection() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.5 }}
-          className="mt-24 text-center"
+          className="mt-12 md:mt-24 text-center"
         >
           <button
             onClick={() => {
               // TODO: Add waitlist functionality
               console.log('Join waitlist clicked');
             }}
-            className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-full border border-white/10 text-white/60 text-sm tracking-widest uppercase font-semibold hover:text-white hover:border-white/30 transition-all duration-300 overflow-hidden"
+            className="group relative inline-flex items-center gap-2 md:gap-3 px-6 md:px-8 py-3 md:py-4 rounded-full border border-white/10 text-white/60 text-xs md:text-sm tracking-widest uppercase font-semibold hover:text-white hover:border-white/30 transition-all duration-300 overflow-hidden"
             style={{
               background: 'linear-gradient(90deg, rgba(69, 90, 112, 0.1) 0%, rgba(47, 61, 77, 0.1) 50%, rgba(69, 90, 112, 0.1) 100%)'
             }}
@@ -717,8 +762,8 @@ export function FeaturesSection() {
       </div>
 
       {/* Footer */}
-      <footer className="absolute bottom-0 left-0 right-0 py-8 text-center">
-        <p className="text-white/30 text-xs tracking-wide">
+      <footer className="absolute bottom-0 left-0 right-0 py-4 md:py-8 text-center">
+        <p className="text-white/30 text-[10px] md:text-xs tracking-wide">
           © {new Date().getFullYear()} Pindex. All rights reserved.
         </p>
       </footer>

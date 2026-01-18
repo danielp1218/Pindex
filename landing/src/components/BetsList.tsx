@@ -39,8 +39,8 @@ export function BetsList() {
   ];
 
   return (
-    <div className="bg-[#1a2332]/80 backdrop-blur-sm rounded-xl p-5 w-full h-full border border-white/10">
-      <h3 className="text-white font-semibold mb-4">Latest Polymarket Bets</h3>
+    <div className="bg-[#1a2332]/80 backdrop-blur-sm rounded-xl p-4 md:p-5 w-full h-full border border-white/10">
+      <h3 className="text-white font-semibold text-sm md:text-base mb-4">Latest Polymarket Bets</h3>
 
       <div className="flex flex-col gap-4">
         {bets.map((bet, index) => (
