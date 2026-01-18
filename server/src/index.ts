@@ -10,18 +10,21 @@ const app = new Hono();
 
 app.use('/*', cors());
 
-app.get('/', (c) => {
-  return c.json({
-    name: 'Pindex Server',
-    version: '1.0.0',
-    endpoints: {
-      health: '/health',
-      relations: '/api/relations',
-      relatedBets: '/api/related-bets',
-      dependencies: '/api/dependencies',
-    },
-  });
-});
+// Type assertion fixes "Type instantiation is excessively deep" error
+app.get('/', (c) => c.json({
+  name: 'Pindex Server',
+  version: '1.0.0',
+  endpoints: {
+    health: '/health',
+    relations: '/api/relations',
+    relationsPricing: '/api/relations/price',
+    relationsGraph: '/api/relations/graph',
+    relationsGraphPricing: '/api/relations/graph/price',
+    relatedBets: '/api/related-bets',
+    dependencies: '/api/dependencies',
+    tools: '/tools',
+  },
+} as const));
 
 app.route('/health', healthRouter);
 app.route('/api/relations', relationsRouter);
