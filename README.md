@@ -6,7 +6,7 @@ Agentic dependency analysis that reveals correlations between prediction markets
 
 ---
 
-## Features
+##🤩 Features
 
 | Feature | Description |
 |---------|-------------|
@@ -18,7 +18,7 @@ Agentic dependency analysis that reveals correlations between prediction markets
 
 ---
 
-## Local Setup
+##🚀 Local Setup
 
 ### Prerequisites
 - Node.js 18+
