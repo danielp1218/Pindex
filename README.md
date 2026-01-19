@@ -1,16 +1,12 @@
-
-https://github.com/user-attachments/assets/e557e920-9a35-4443-ba4d-88f81333e721
 # Pindex <img src="/landing/public/logo.jpg" style="height: 38px; vertical-align: bottom; border-radius: 8px;">
 
 > **Create your own agentic index funds inside Polymarket**
 
 Agentic dependency analysis that reveals correlations between prediction markets. Analyze, decide, optimize—systematically.
 
+https://github.com/user-attachments/assets/b8906aea-124f-4c83-a3a5-1d60837a4a47
+
 ---
-
-
-Uploading finalupload.mov…
-
 
 ## 🤩 Features
 
