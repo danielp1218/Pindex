@@ -1,6 +1,9 @@
 import { BetRelationship } from '@/types/graph';
 
-const API_BASE_URL = 'https://server.danielpu2007.workers.dev';
+const API_BASE_URL = import.meta.env.VITE_API_ENDPOINT || '';
+if (!API_BASE_URL) {
+  throw new Error('VITE_API_ENDPOINT is not defined');
+}
 
 export interface SourceMarket {
   id: string;
@@ -143,6 +146,8 @@ async function parseSSEStream(
         const data = line.slice(5).trim();
 
         if (!data) continue;
+
+        console.log('[related-bets][sse]', data);
 
         const { type, payload } = parseSSEData(data);
 

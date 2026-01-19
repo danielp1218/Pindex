@@ -3,6 +3,7 @@ import { BalanceCard } from './components/BalanceCard';
 import { BetsList } from './components/BetsList';
 import { IndexTable } from './components/IndexTable';
 import { Spotlight } from './components/ui/Spotlight';
+import Image from 'next/image';
 
 function App() {
   return (
@@ -134,7 +135,15 @@ function App() {
                   background: 'linear-gradient(90deg, #455a70 0%, #2f3d4d 50%, #455a70 100%)'
                 }}
               >
-                <img src="/chrome.png" alt="Chrome" className="w-6 md:w-8 h-4 md:h-5 rounded-full" />
+                <Image
+                  src="/chrome.png"
+                  alt="Chrome"
+                  width={32}
+                  height={20}
+                  sizes="(min-width: 768px) 32px, 24px"
+                  className="w-6 md:w-8 h-4 md:h-5 rounded-full"
+                  priority
+                />
                 <span className="hidden sm:inline">Download for Chrome</span>
                 <span className="sm:hidden">Chrome</span>
               </button>

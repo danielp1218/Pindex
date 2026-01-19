@@ -32,6 +32,14 @@ function extractQueueIds(items: DependencyQueueItem[]): string[] {
   return items.map(item => item.id).filter(Boolean);
 }
 
+function hasVisitedEvent(visited: string[], url: string): boolean {
+  const targetId = getEventIdFromUrl(url);
+  if (!targetId) {
+    return visited.includes(url);
+  }
+  return visited.some(entry => getEventIdFromUrl(entry) === targetId);
+}
+
 function deduplicateQueue(items: DependencyQueueItem[]): DependencyQueueItem[] {
   const seen = new Set<string>();
   return items.filter(item => {
@@ -149,6 +157,17 @@ export async function processDependencyDecision({
   ]);
 
   if (!keep) {
+    await setDependencyState(eventUrl, nextQueue, nextVisited);
+    return { queue: nextQueue, visited: nextVisited };
+  }
+
+  if (!current && hasVisitedEvent(visited, eventUrl)) {
+    await setDependencyState(eventUrl, nextQueue, nextVisited);
+    return { queue: nextQueue, visited: nextVisited };
+  }
+
+  if (current) {
+    // Avoid expanding dependencies on every accept; only the root decision triggers expansion.
     await setDependencyState(eventUrl, nextQueue, nextVisited);
     return { queue: nextQueue, visited: nextVisited };
   }

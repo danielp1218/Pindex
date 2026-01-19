@@ -4,6 +4,7 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   manifest: {
+    name: 'Pindex',
     permissions: ['storage'],
     host_permissions: [
       'https://*.workers.dev/*',
@@ -12,13 +13,20 @@ export default defineConfig({
       'http://127.0.0.1/*',
     ],
     // Remove default_popup to allow onClicked to fire
+    icons: {
+      '16': 'logo.png',
+      '32': 'logo.png',
+      '48': 'logo.png',
+      '96': 'logo.png',
+      '128': 'logo.png',
+    },
     action: {
       default_icon: {
-        '16': 'icon/16.png',
-        '32': 'icon/32.png',
-        '48': 'icon/48.png',
-        '96': 'icon/96.png',
-        '128': 'icon/128.png',
+        '16': 'logo.png',
+        '32': 'logo.png',
+        '48': 'logo.png',
+        '96': 'logo.png',
+        '128': 'logo.png',
       },
       default_title: 'Pindex',
     },

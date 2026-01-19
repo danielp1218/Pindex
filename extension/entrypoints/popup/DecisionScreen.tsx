@@ -32,6 +32,7 @@ interface DecisionScreenProps {
   onViewNodes: () => void;
   onDecision: (accepted: boolean, risk: number) => void;
   isProcessing: boolean;
+  hasDecisionTarget?: boolean;
   miniGraphData?: DecisionMiniGraphData | null;
   showUserSelection?: boolean;
   globalsBaseline?: GraphOutcomeResult | null;
@@ -62,6 +63,7 @@ export default function DecisionScreen({
   onViewNodes,
   onDecision,
   isProcessing,
+  hasDecisionTarget = true,
   miniGraphData,
   showUserSelection,
   globalsBaseline,
@@ -684,76 +686,78 @@ export default function DecisionScreen({
               </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '8px', marginTop: 'auto', paddingTop: '12px' }}>
-          <button
-            onMouseEnter={() => setAcceptBtnHover(true)}
-            onMouseLeave={() => setAcceptBtnHover(false)}
-            disabled={isProcessing}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              borderRadius: '8px',
-              fontWeight: 500,
-              fontSize: '12px',
-              cursor: isProcessing ? 'not-allowed' : 'pointer',
-              border: accepted === true 
-                ? '1px solid rgba(110, 231, 183, 0.3)' 
-                : acceptBtnHover 
-                  ? '1px solid rgba(255, 255, 255, 0.3)' 
-                  : '1px solid rgba(255, 255, 255, 0.1)',
-              background: accepted === true 
-                ? 'linear-gradient(180deg, #2d4a3e 0%, #1e3a2f 100%)' 
-                : 'linear-gradient(180deg, #3d4f63 0%, #2a3a4a 100%)',
-              color: accepted === true ? '#6ee7b7' : '#e2e8f0',
-              transition: 'all 0.2s ease',
-              boxShadow: acceptBtnHover && accepted !== true
-                ? '0 8px 32px rgba(70, 100, 140, 0.3)' 
-                : '0 2px 8px rgba(0, 0, 0, 0.15)',
-              filter: acceptBtnHover && accepted !== true ? 'brightness(1.25)' : 'brightness(1)',
-              opacity: isProcessing ? 0.6 : 1,
-            }}
-            onClick={() => {
-              setAccepted(true);
-              onDecision(true, riskLevel);
-            }}
-          >
-            Accept
-          </button>
-          <button
-            onMouseEnter={() => setRejectBtnHover(true)}
-            onMouseLeave={() => setRejectBtnHover(false)}
-            disabled={isProcessing}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              borderRadius: '8px',
-              fontWeight: 500,
-              fontSize: '12px',
-              cursor: isProcessing ? 'not-allowed' : 'pointer',
-              border: accepted === false 
-                ? '1px solid rgba(252, 165, 165, 0.3)' 
-                : rejectBtnHover 
-                  ? '1px solid rgba(255, 255, 255, 0.3)' 
-                  : '1px solid rgba(255, 255, 255, 0.1)',
-              background: accepted === false 
-                ? 'linear-gradient(180deg, #4a2d2d 0%, #3a1e1e 100%)' 
-                : 'linear-gradient(180deg, #3d4f63 0%, #2a3a4a 100%)',
-              color: accepted === false ? '#fca5a5' : '#e2e8f0',
-              transition: 'all 0.2s ease',
-              boxShadow: rejectBtnHover && accepted !== false
-                ? '0 8px 32px rgba(70, 100, 140, 0.3)' 
-                : '0 2px 8px rgba(0, 0, 0, 0.15)',
-              filter: rejectBtnHover && accepted !== false ? 'brightness(1.25)' : 'brightness(1)',
-              opacity: isProcessing ? 0.6 : 1,
-            }}
-            onClick={() => {
-              setAccepted(false);
-              onDecision(false, riskLevel);
-            }}
-          >
-            Reject
-          </button>
-        </div>
+        {hasDecisionTarget && (
+          <div style={{ display: 'flex', gap: '8px', marginTop: 'auto', paddingTop: '12px' }}>
+            <button
+              onMouseEnter={() => setAcceptBtnHover(true)}
+              onMouseLeave={() => setAcceptBtnHover(false)}
+              disabled={isProcessing}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: '8px',
+                fontWeight: 500,
+                fontSize: '12px',
+                cursor: isProcessing ? 'not-allowed' : 'pointer',
+                border: accepted === true 
+                  ? '1px solid rgba(110, 231, 183, 0.3)' 
+                  : acceptBtnHover 
+                    ? '1px solid rgba(255, 255, 255, 0.3)' 
+                    : '1px solid rgba(255, 255, 255, 0.1)',
+                background: accepted === true 
+                  ? 'linear-gradient(180deg, #2d4a3e 0%, #1e3a2f 100%)' 
+                  : 'linear-gradient(180deg, #3d4f63 0%, #2a3a4a 100%)',
+                color: accepted === true ? '#6ee7b7' : '#e2e8f0',
+                transition: 'all 0.2s ease',
+                boxShadow: acceptBtnHover && accepted !== true
+                  ? '0 8px 32px rgba(70, 100, 140, 0.3)' 
+                  : '0 2px 8px rgba(0, 0, 0, 0.15)',
+                filter: acceptBtnHover && accepted !== true ? 'brightness(1.25)' : 'brightness(1)',
+                opacity: isProcessing ? 0.6 : 1,
+              }}
+              onClick={() => {
+                setAccepted(true);
+                onDecision(true, riskLevel);
+              }}
+            >
+              Accept
+            </button>
+            <button
+              onMouseEnter={() => setRejectBtnHover(true)}
+              onMouseLeave={() => setRejectBtnHover(false)}
+              disabled={isProcessing}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: '8px',
+                fontWeight: 500,
+                fontSize: '12px',
+                cursor: isProcessing ? 'not-allowed' : 'pointer',
+                border: accepted === false 
+                  ? '1px solid rgba(252, 165, 165, 0.3)' 
+                  : rejectBtnHover 
+                    ? '1px solid rgba(255, 255, 255, 0.3)' 
+                    : '1px solid rgba(255, 255, 255, 0.1)',
+                background: accepted === false 
+                  ? 'linear-gradient(180deg, #4a2d2d 0%, #3a1e1e 100%)' 
+                  : 'linear-gradient(180deg, #3d4f63 0%, #2a3a4a 100%)',
+                color: accepted === false ? '#fca5a5' : '#e2e8f0',
+                transition: 'all 0.2s ease',
+                boxShadow: rejectBtnHover && accepted !== false
+                  ? '0 8px 32px rgba(70, 100, 140, 0.3)' 
+                  : '0 2px 8px rgba(0, 0, 0, 0.15)',
+                filter: rejectBtnHover && accepted !== false ? 'brightness(1.25)' : 'brightness(1)',
+                opacity: isProcessing ? 0.6 : 1,
+              }}
+              onClick={() => {
+                setAccepted(false);
+                onDecision(false, riskLevel);
+              }}
+            >
+              Reject
+            </button>
+          </div>
+        )}
       </div>
 
 

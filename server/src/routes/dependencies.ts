@@ -97,6 +97,33 @@ function formatFinalPayload(payload: unknown): string {
   return `final - ${JSON.stringify(payload)}`;
 }
 
+async function resolveBetSlug(
+  bet: FoundRelatedBet,
+  cache: Map<string, string | null>,
+  logger: Logger
+): Promise<string | undefined> {
+  const directSlug = bet.eventSlug || bet.market.market_slug || bet.market.event_slug;
+  if (directSlug) {
+    return directSlug;
+  }
+
+  if (cache.has(bet.marketId)) {
+    const cached = cache.get(bet.marketId);
+    return cached || undefined;
+  }
+
+  try {
+    const market = await fetchMarket(bet.marketId, logger);
+    const fetchedSlug = market.market_slug || market.event_slug;
+    cache.set(bet.marketId, fetchedSlug || null);
+    return fetchedSlug || undefined;
+  } catch (error) {
+    logger('log', `Failed to resolve slug for market ${bet.marketId}`, error);
+    cache.set(bet.marketId, null);
+    return undefined;
+  }
+}
+
 function createSseLogger(stream: any, warnings: string[]): Logger {
   return (level, message, meta) => {
     void stream.writeSSE({ data: formatLogPayload(level, message, meta) });
@@ -184,7 +211,7 @@ dependenciesRouter.post('/', async (c: Context) => {
 
       logger('log', 'Finding related bets');
       const desiredDependants = 4;
-      const candidateLimit = Math.max(desiredDependants, 12);
+      const candidateLimit = Math.max(desiredDependants * 4, 12);
       const relatedBets: FoundRelatedBet[] = [];
       for await (const bet of findRelatedBets(sourceMarket, visitedSlugs, c, logger, {
         maxResults: candidateLimit,
@@ -201,8 +228,9 @@ dependenciesRouter.post('/', async (c: Context) => {
         warnings.push('no_related_bets:No related bets found.');
       }
 
-      const dependantMeta: DependantMeta[] = relatedBets.map((bet) => {
-        const slug = bet.eventSlug || bet.market.market_slug;
+      const slugCache = new Map<string, string | null>();
+      const dependantMeta: DependantMeta[] = await Promise.all(relatedBets.map(async (bet) => {
+        const slug = await resolveBetSlug(bet, slugCache, logger);
         const id = slug || bet.marketId;
         if (!slug) {
           warnings.push(`missing_slug:${bet.marketId}:Using marketId as id.`);
@@ -221,30 +249,61 @@ dependenciesRouter.post('/', async (c: Context) => {
           yesPercentage: bet.yesPercentage,
           noPercentage: bet.noPercentage,
         };
-      });
+      }));
 
       logger('log', 'Pricing dependant relations');
-      const pricing = priceCompactDependants(
+      const pricingInputs = dependantMeta.map(dep => ({
+        id: dep.id,
+        probability: dep.probability,
+        relation: dep.relation,
+      }));
+      const baseEpsilon = options?.epsilon ?? 0.01;
+      let usedEpsilon = baseEpsilon;
+      let pricing = priceCompactDependants(
         {
           probability: rootProbability,
           weight,
           decision,
           id: sourceMarket.id,
         },
-        dependantMeta.map(dep => ({
-          id: dep.id,
-          probability: dep.probability,
-          relation: dep.relation,
-        })),
+        pricingInputs,
         {
           volatility,
-          epsilon: options?.epsilon,
+          epsilon: baseEpsilon,
         }
       );
 
       const metaById = new Map(dependantMeta.map(dep => [dep.id, dep]));
 
-      const nonZeroDependants = pricing.dependants.filter(dep => dep.weight > 0);
+      let nonZeroDependants = pricing.dependants.filter(dep => dep.weight > 0);
+      if (options?.epsilon === undefined && nonZeroDependants.length < desiredDependants) {
+        const epsilonSteps = baseEpsilon > 0 ? [baseEpsilon / 2, baseEpsilon / 4, 0] : [0];
+        for (const epsilon of epsilonSteps) {
+          pricing = priceCompactDependants(
+            {
+              probability: rootProbability,
+              weight,
+              decision,
+              id: sourceMarket.id,
+            },
+            pricingInputs,
+            {
+              volatility,
+              epsilon,
+            }
+          );
+          nonZeroDependants = pricing.dependants.filter(dep => dep.weight > 0);
+          usedEpsilon = epsilon;
+          if (nonZeroDependants.length >= desiredDependants || epsilon === 0) {
+            break;
+          }
+        }
+
+        if (usedEpsilon !== baseEpsilon) {
+          logger('log', `Adjusted epsilon to ${usedEpsilon} to surface more dependants`);
+        }
+      }
+
       if (nonZeroDependants.length < pricing.dependants.length) {
         warnings.push('zero_weight_filtered:Removed zero-weight dependants.');
       }

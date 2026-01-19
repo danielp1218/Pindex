@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export function BetsList() {
   const bets = [
     {
@@ -39,14 +41,21 @@ export function BetsList() {
   ];
 
   return (
-    <div className="bg-[#1a2332]/80 backdrop-blur-sm rounded-xl p-4 md:p-5 w-full h-full border border-white/10">
+    <div className="bg-[#1a2332]/90 rounded-xl p-4 md:p-5 w-full h-full border border-white/10">
       <h3 className="text-white font-semibold text-sm md:text-base mb-4">Latest Polymarket Bets</h3>
 
       <div className="flex flex-col gap-4">
         {bets.map((bet, index) => (
           <div key={index} className="flex items-center gap-3">
             {bet.logo ? (
-              <img src={bet.logo} alt={bet.title} className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+              <Image
+                src={bet.logo}
+                alt={bet.title}
+                width={40}
+                height={40}
+                sizes="40px"
+                className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
+              />
             ) : (
               <div className={`w-10 h-10 ${bet.iconBg} rounded-xl flex items-center justify-center text-lg flex-shrink-0`}>
                 {bet.icon}
@@ -61,7 +70,14 @@ export function BetsList() {
                 {bet.value}
               </div>
               <div className="text-[10px] text-gray-500 flex items-center justify-end gap-1">
-                <img src="/polylogo.png" alt="Poly Index" className="w-3 h-3 object-contain" />
+                <Image
+                  src="/polylogo.png"
+                  alt="Poly Index"
+                  width={12}
+                  height={12}
+                  sizes="12px"
+                  className="w-3 h-3 object-contain"
+                />
                 Pindex
               </div>
             </div>

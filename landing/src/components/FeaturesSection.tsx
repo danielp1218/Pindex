@@ -1,5 +1,16 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+'use client';
+
+import Image from 'next/image';
+import { motion } from 'framer-motion';
+
+const particlePositions = [
+  { top: "8%", left: "18%" },
+  { top: "22%", left: "72%" },
+  { top: "38%", left: "44%" },
+  { top: "54%", left: "86%" },
+  { top: "68%", left: "12%" },
+  { top: "84%", left: "60%" },
+];
 
 // Prediction Market Card Component
 const MarketCard = ({ 
@@ -66,23 +77,37 @@ const MarketCard = ({
           {/* Profile Image - Smaller but nicer */}
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden shrink-0 bg-gradient-to-br from-gray-700/50 to-gray-900/50 border border-white/5 shadow-inner flex items-center justify-center">
             {image ? (
-              <img src={image} alt={title} className="w-full h-full object-cover" />
+              <Image
+                src={image}
+                alt={title}
+                width={48}
+                height={48}
+                sizes="(min-width: 768px) 48px, 40px"
+                className="w-full h-full object-cover"
+              />
             ) : title.toLowerCase().includes('bitcoin') || title.toLowerCase().includes('btc') ? (
               <div className="w-full h-full bg-orange-500 flex items-center justify-center">
                 <span className="text-xl md:text-2xl font-bold">&#8383;</span>
-        </div>
+              </div>
             ) : title.toLowerCase().includes('spacex') || title.toLowerCase().includes('starship') ? (
-              <img src="/betlist/spacex.png" alt="SpaceX" className="w-full h-full object-cover" />
+              <Image
+                src="/betlist/spacex.png"
+                alt="SpaceX"
+                width={48}
+                height={48}
+                sizes="(min-width: 768px) 48px, 40px"
+                className="w-full h-full object-cover"
+              />
             ) : (
               <span className="text-lg md:text-xl filter drop-shadow-sm">📊</span>
             )}
-      </div>
+          </div>
 
           {/* Title and Percentage */}
           <div className="flex-1 min-w-0">
             <h3 className="text-white font-semibold text-[11px] md:text-[13px] leading-tight mb-2 md:mb-2.5 line-clamp-2 tracking-wide group-hover:text-white transition-colors">
-        {title}
-      </h3>
+              {title}
+            </h3>
             
             {/* Percentage with circular progress - Smaller */}
             <div className="flex items-center gap-1.5 md:gap-2">
@@ -151,30 +176,14 @@ const MarketCard = ({
 };
 
 export function FeaturesSection() {
-  const containerRef = useRef<HTMLElement | null>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"]
-  });
-
-  const y1 = useTransform(scrollYProgress, [0, 1], [0, -100]);
-  const y2 = useTransform(scrollYProgress, [0, 1], [0, 100]);
-
   return (
     <section
-      ref={containerRef}
       className="min-h-screen py-16 md:py-32 relative overflow-hidden bg-[#0d1926]"
     >
       {/* Ambient Background Effects */}
       <div className="absolute inset-0 pointer-events-none">
-        <motion.div
-          style={{ y: y1 }}
-          className="absolute top-[10%] left-[5%] w-[400px] h-[400px] bg-[#6fd1b0]/10 rounded-full blur-[120px]"
-        />
-        <motion.div
-          style={{ y: y2 }}
-          className="absolute bottom-[10%] right-[5%] w-[500px] h-[500px] bg-[#ba96e3]/10 rounded-full blur-[150px]"
-        />
+        <div className="absolute top-[10%] left-[5%] w-[400px] h-[400px] bg-[#6fd1b0]/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[5%] w-[500px] h-[500px] bg-[#ba96e3]/10 rounded-full blur-[150px]" />
       </div>
 
       {/* Grid Pattern Overlay */}
@@ -206,7 +215,7 @@ export function FeaturesSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="bg-[#1a2332]/80 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 group relative overflow-hidden h-[400px] md:h-[550px]"
+            className="bg-[#1a2332]/90 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 group relative overflow-hidden h-[400px] md:h-[550px]"
           >
             {/* Blurred background simulating Polymarket grid of cards */}
             <div className="absolute inset-0 blur-[5px] opacity-40 scale-105">
@@ -397,7 +406,14 @@ export function FeaturesSection() {
                   <div className="flex items-center justify-between p-4 border-b border-white/5">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0">
-                        <img src="/betlist/usa.png" alt="USA Flag" className="w-full h-full object-cover" />
+                        <Image
+                          src="/betlist/usa.png"
+                          alt="USA Flag"
+                          width={32}
+                          height={32}
+                          sizes="32px"
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div>
                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">PINDEX</div>
@@ -427,11 +443,25 @@ export function FeaturesSection() {
                       {/* Nodes visualization */}
                       <div className="flex items-center justify-between mb-4">
                         <div className="w-10 h-10 rounded-full bg-[#1a2332] border border-white/20 overflow-hidden flex items-center justify-center shrink-0">
-                          <img src="/featurelist/trumpwin.webp" alt="Trump Win" className="w-full h-full object-cover" />
+                          <Image
+                            src="/featurelist/trumpwin.webp"
+                            alt="Trump Win"
+                            width={40}
+                            height={40}
+                            sizes="40px"
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                         <div className="flex-1 h-px bg-gradient-to-r from-white/20 via-white/40 to-white/20 mx-4" />
                         <div className="w-10 h-10 rounded-full bg-[#1a2332] border border-white/20 overflow-hidden flex items-center justify-center shrink-0">
-                          <img src="/featurelist/trumpflorida.jpeg" alt="Trump Florida" className="w-full h-full object-cover" />
+                          <Image
+                            src="/featurelist/trumpflorida.jpeg"
+                            alt="Trump Florida"
+                            width={40}
+                            height={40}
+                            sizes="40px"
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                       </div>
                       <div className="flex justify-between text-[10px]">
@@ -483,7 +513,7 @@ export function FeaturesSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-[#1a2332]/80 backdrop-blur-sm rounded-2xl p-4 md:p-8 border border-white/10 hover:border-white/20 transition-all duration-300 relative overflow-hidden h-[500px] md:h-[550px]"
+            className="bg-[#1a2332]/90 rounded-2xl p-4 md:p-8 border border-white/10 hover:border-white/20 transition-all duration-300 relative overflow-hidden h-[500px] md:h-[550px]"
           >
             {/* Background Golden Chart (replica of BalanceCard) */}
             <div className="absolute inset-0 opacity-10">

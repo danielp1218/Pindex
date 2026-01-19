@@ -1,6 +1,6 @@
 export function BalanceCard() {
   return (
-    <div className="bg-[#1a2332]/80 backdrop-blur-sm rounded-xl p-4 md:p-5 w-full h-full border border-white/10">
+    <div className="bg-[#1a2332]/90 rounded-xl p-4 md:p-5 w-full h-full border border-white/10">
       <div className="flex flex-col md:flex-row justify-between items-start gap-3 md:gap-0 mb-4">
         <div className="flex items-baseline">
           <span className="text-xl md:text-2xl" style={{ color: '#9ca3af' }}>$</span>

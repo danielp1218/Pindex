@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
-"""
-Phoenix Dataset Creator
-
-Uploads resolved Polymarket data to Phoenix as a reusable dataset.
-python create_dataset.py before python optimize.py
-"""
+# Creates ground truth dataset from resolved Polymarket data
+# Run this before optimize.py
 
 import os
 import json
@@ -14,9 +10,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ============================================================
-# COLORS
-# ============================================================
 class C:
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
@@ -31,9 +24,6 @@ print(f"{C.CYAN}{C.BOLD}║          PHOENIX DATASET CREATOR                    
 print(f"{C.CYAN}{C.BOLD}║          Upload Polymarket test data to Phoenix               ║{C.RESET}")
 print(f"{C.CYAN}{C.BOLD}╚═══════════════════════════════════════════════════════════════╝{C.RESET}\n")
 
-# ============================================================
-# PHOENIX SETUP
-# ============================================================
 import phoenix as px
 
 try:
@@ -44,15 +34,10 @@ except Exception as e:
     print(f"{C.YELLOW}Make sure Phoenix is running: docker run -p 6006:6006 arizephoenix/phoenix:latest{C.RESET}")
     exit(1)
 
-# ============================================================
-# POLYMARKET API
-# ============================================================
 GAMMA_API = "https://gamma-api.polymarket.com"
 TOPICS = ["Trump", "Bitcoin", "Fed", "election", "China", "Ukraine", "AI", "recession"]
 
 def fetch_markets_by_topic(topic: str, limit: int = 100) -> list:
-    """Fetch resolved markets matching a topic keyword"""
-
     params = {"limit": limit, "closed": "true", "order": "volume", "ascending": "false"}
     response = requests.get(f"{GAMMA_API}/markets", params=params)
     response.raise_for_status()
@@ -73,13 +58,13 @@ def fetch_markets_by_topic(topic: str, limit: int = 100) -> list:
                 prices = json.loads(m["outcomePrices"]) if isinstance(m["outcomePrices"], str) else m["outcomePrices"]
                 if prices:
                     price = float(prices[0])
-            except:
+            except (ValueError, TypeError, IndexError):
                 continue
 
-        # Only clear outcomes
-        if price >= 0.95:
+        # Include markets with reasonably clear outcomes
+        if price >= 0.80:
             outcome = "YES"
-        elif price <= 0.05:
+        elif price <= 0.20:
             outcome = "NO"
         else:
             continue
@@ -98,8 +83,6 @@ def fetch_markets_by_topic(topic: str, limit: int = 100) -> list:
     return markets
 
 def create_dataset():
-    """Fetch markets and upload to Phoenix as a dataset"""
-
     print(f"{C.CYAN}[1/3] Fetching resolved markets from Polymarket...{C.RESET}")
 
     all_markets = []
@@ -111,10 +94,8 @@ def create_dataset():
 
     print(f"\n{C.GREEN}  Total: {len(all_markets)} resolved markets{C.RESET}")
 
-    # ========== CREATE TEST PAIRS ==========
     print(f"\n{C.CYAN}[2/3] Creating test pairs (source → candidates)...{C.RESET}")
 
-    # Group by topic
     by_topic = {}
     for m in all_markets:
         topic = m["topic"]
@@ -122,13 +103,11 @@ def create_dataset():
             by_topic[topic] = []
         by_topic[topic].append(m)
 
-    # Create test examples: each is a source market with candidate markets from same topic
     examples = []
     for topic, markets in by_topic.items():
         if len(markets) < 5:
             continue
 
-        # Take first 3 markets as sources, rest as candidates
         for i in range(min(3, len(markets))):
             source = markets[i]
             candidates = [m for m in markets if m["id"] != source["id"]][:10]
@@ -154,14 +133,12 @@ def create_dataset():
 
     print(f"{C.GREEN}  Created {len(examples)} test examples across {len(by_topic)} topics{C.RESET}")
 
-    # ========== UPLOAD TO PHOENIX ==========
     print(f"\n{C.CYAN}[3/3] Uploading dataset to Phoenix...{C.RESET}")
 
     dataset_name = "polymarket_ground_truth"
 
     try:
-        # Create the dataset
-        dataset = client.upload_dataset(
+        client.upload_dataset(
             dataset_name=dataset_name,
             inputs=[ex["input"] for ex in examples],
             outputs=[ex["expected"] for ex in examples],
@@ -174,16 +151,13 @@ def create_dataset():
 
     except Exception as e:
         print(f"{C.RED}  ✗ Upload failed: {e}{C.RESET}")
-
-        # Try to check if it already exists
         try:
-            existing = client.get_dataset(name=dataset_name)
+            client.get_dataset(name=dataset_name)
             print(f"{C.YELLOW}  Dataset '{dataset_name}' already exists. Delete it first or use a new name.{C.RESET}")
         except:
             pass
         return
 
-    # ========== SUMMARY ==========
     print(f"\n{C.GREEN}{'='*65}{C.RESET}")
     print(f"{C.GREEN}{C.BOLD}DATASET CREATED SUCCESSFULLY{C.RESET}")
     print(f"{C.GREEN}{'='*65}{C.RESET}")

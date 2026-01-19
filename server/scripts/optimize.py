@@ -1,20 +1,6 @@
 #!/usr/bin/env python3
-"""
-Polyindex Multi-Layer Prompt Optimizer
-
-Full Phoenix Integration:
-- Tracing: All OpenAI calls traced
-- Datasets: Load test data from Phoenix
-- Experiments: Each run logged as experiment
-- Evaluators: LLM-based prediction evaluation
-
-Optimization Layers:
-1. Baseline testing against resolved Polymarket data
-2. Few-shot example injection from successful predictions
-3. Warning injection from failure patterns
-4. LLM-based prompt mutation for underperforming sections
-5. Iterative refinement until target accuracy is reached
-"""
+# Multi-layer prompt optimizer with Phoenix integration
+# Tests prompts against resolved Polymarket data and iteratively improves them
 
 import os
 import json
@@ -25,11 +11,8 @@ from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass, asdict
 
-# ============================================================
-# COLORS (ANSI escape codes)
-# ============================================================
 class C:
-    HEADER = '\033[95m'      # Magenta
+    HEADER = '\033[95m'
     BLUE = '\033[94m'
     CYAN = '\033[96m'
     GREEN = '\033[92m'
@@ -54,23 +37,17 @@ class C:
     @staticmethod
     def header(text): return f"{C.HEADER}{C.BOLD}{text}{C.RESET}"
 
-# ============================================================
-# CONFIGURATION
-# ============================================================
 CONFIG = {
-    "max_iterations": 4,           # Maximum optimization iterations
-    "target_accuracy": 75.0,       # Stop if we reach this accuracy %
-    "target_profit": 0.3,          # Stop if avg profit score reaches this
-    "tests_per_topic": 3,          # Number of source markets to test per topic
-    "candidates_per_test": 10,     # Candidate markets per test
-    "few_shot_examples": 3,        # Number of few-shot examples to include
-    "model": "gpt-4o-mini",        # Model for related bets
-    "mutation_model": "gpt-4o",    # Model for prompt mutation (smarter)
+    "max_iterations": 4,
+    "target_accuracy": 75.0,
+    "target_profit": 0.3,
+    "tests_per_topic": 3,
+    "candidates_per_test": 10,
+    "few_shot_examples": 3,
+    "model": "gpt-4o-mini",
+    "mutation_model": "gpt-4o",
 }
 
-# ============================================================
-# SETUP
-# ============================================================
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -83,7 +60,6 @@ print(C.header("║        POLYINDEX MULTI-LAYER PROMPT OPTIMIZER               
 print(C.header("║        All OpenAI calls traced to Phoenix                     ║"))
 print(C.header("╚═══════════════════════════════════════════════════════════════╝\n"))
 
-# Phoenix tracing setup
 os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = "http://localhost:6006"
 
 phoenix_enabled = False
@@ -95,7 +71,6 @@ try:
     from openinference.instrumentation.openai import OpenAIInstrumentor
     import phoenix as px
 
-    # 1. Tracing setup
     tracer_provider = register(
         project_name="polyindex-optimizer",
         endpoint="http://localhost:6006/v1/traces"
@@ -103,11 +78,9 @@ try:
     OpenAIInstrumentor().instrument(tracer_provider=tracer_provider)
     print(C.success("[Phoenix] ✓ Tracing enabled"))
 
-    # 2. Phoenix client for datasets & experiments
     phoenix_client = px.Client(endpoint="http://localhost:6006")
     print(C.success("[Phoenix] ✓ Client connected"))
 
-    # 3. Try to load dataset
     try:
         phoenix_dataset = phoenix_client.get_dataset(name="polymarket_ground_truth")
         print(C.success(f"[Phoenix] ✓ Dataset loaded: {len(phoenix_dataset)} examples"))
@@ -125,9 +98,6 @@ except Exception as e:
 from openai import OpenAI
 openai_client = OpenAI()
 
-# ============================================================
-# DATA CLASSES
-# ============================================================
 @dataclass
 class Market:
     id: str
@@ -135,7 +105,7 @@ class Market:
     description: str
     yes_price: int
     no_price: int
-    outcome: str  # "YES" or "NO"
+    outcome: str
     volume: float = 0.0
 
 @dataclass
@@ -178,9 +148,6 @@ class IterationResult:
     bad_examples: List[dict]
     changes_made: List[str]
 
-# ============================================================
-# BASE PROMPT
-# ============================================================
 BASE_PROMPT = """You are a strategic prediction market analyst finding ACTIONABLE related bets.
 
 Source Market:
@@ -227,17 +194,10 @@ Return JSON:
 
 Return empty array if no good opportunities: {{"related": []}}"""
 
-# ============================================================
-# POLYMARKET API
-# ============================================================
 GAMMA_API = "https://gamma-api.polymarket.com"
-
-# Topics that tend to have interconnected markets
 TOPICS = ["Trump", "Bitcoin", "Fed", "election", "China", "Ukraine", "AI", "recession"]
 
 def fetch_markets_by_topic(topic: str, limit: int = 50, closed: bool = True) -> List[Market]:
-    """Fetch markets matching a topic keyword"""
-
     params = {"limit": limit, "order": "volume", "ascending": "false"}
     if closed:
         params["closed"] = "true"
@@ -252,7 +212,6 @@ def fetch_markets_by_topic(topic: str, limit: int = 50, closed: bool = True) -> 
         question = m.get("question", "")
         description = m.get("description", "") or ""
 
-        # Filter by topic keyword
         if topic_lower not in question.lower() and topic_lower not in description.lower():
             continue
 
@@ -262,17 +221,16 @@ def fetch_markets_by_topic(topic: str, limit: int = 50, closed: bool = True) -> 
                 prices = json.loads(m["outcomePrices"]) if isinstance(m["outcomePrices"], str) else m["outcomePrices"]
                 if prices:
                     price = float(prices[0])
-            except:
+            except (ValueError, TypeError, IndexError):
                 continue
 
-        # Determine outcome for closed markets
         if closed:
-            if price >= 0.95:
+            if price >= 0.80:
                 outcome = "YES"
-            elif price <= 0.05:
+            elif price <= 0.20:
                 outcome = "NO"
             else:
-                continue  # Skip unclear outcomes
+                continue
         else:
             outcome = "PENDING"
 
@@ -289,7 +247,6 @@ def fetch_markets_by_topic(topic: str, limit: int = 50, closed: bool = True) -> 
     return markets
 
 def fetch_related_market_sets() -> Dict[str, List[Market]]:
-    """Fetch markets grouped by topic for meaningful relationship testing"""
     print(C.info("  Fetching markets by topic for meaningful relationships..."))
 
     market_sets = {}
@@ -308,13 +265,8 @@ def fetch_related_market_sets() -> Dict[str, List[Market]]:
 
     return market_sets
 
-# ============================================================
-# PROMPT EXECUTION
-# ============================================================
-def run_prompt(prompt: str, source: Market, candidates: List[Market], debug: bool = False) -> List[dict]:
-    """Execute prompt against OpenAI - TRACED by Phoenix"""
-
-    # Use safe string replacement instead of .format() to avoid JSON brace conflicts
+def run_prompt(prompt: str, source: Market, candidates: List[Market]) -> List[dict]:
+    # Safe string replacement to avoid JSON brace conflicts
     filled = prompt
     filled = filled.replace("{source_question}", source.question)
     filled = filled.replace("{source_yes}", str(source.yes_price))
@@ -340,51 +292,23 @@ def run_prompt(prompt: str, source: Market, candidates: List[Market], debug: boo
         )
 
         content = completion.choices[0].message.content
-        if debug:
-            print(f"      [DEBUG] Raw response: {content[:500] if content else 'None'}...")
         if content:
             result = json.loads(content)
-            related = result.get("related", [])
-            if debug and related:
-                print(f"      [DEBUG] Found {len(related)} predictions")
-                for r in related[:2]:
-                    print(f"        - {r.get('marketId', 'NO_ID')[:20]}... ({r.get('relationship', '?')})")
-            return related
+            return result.get("related", [])
     except Exception as e:
         print(f"    ⚠ API error: {e}")
 
     return []
 
-# ============================================================
-# EVALUATION
-# ============================================================
 def evaluate_relationship(source_outcome: str, related_outcome: str, relationship: str) -> Tuple[bool, float]:
-    """
-    Evaluate if prediction held true and calculate profit potential.
-
-    Uses logical validation based on relationship type:
-    - IMPLIES: related YES → source YES (contrapositive: source NO → related NO is ok)
-    - CONTRADICTS: source and related should have opposite outcomes
-    - SUBEVENT: hard to validate causally, always give partial credit
-    - CONDITIONED_ON: source is prerequisite, so source YES → related can be YES
-    - WEAK_SIGNAL: correlated, so outcomes should match
-
-    Returns: (held: bool, profit: float)
-    """
     source_yes = source_outcome == "YES"
     related_yes = related_outcome == "YES"
 
-    # Format: (condition_for_held, profit_if_held, profit_if_not_held)
     evaluations = {
-        # IMPLIES: "related YES → source YES" - valid if source=NO (vacuous) or both YES
         "IMPLIES": (not source_yes or related_yes, 0.6, -0.8),
-        # CONTRADICTS: outcomes should be opposite
         "CONTRADICTS": (source_yes != related_yes, 0.7, -0.7),
-        # SUBEVENT: causal link hard to verify, give partial credit
         "SUBEVENT": (True, 0.3, 0.0),
-        # CONDITIONED_ON: source is prerequisite - same logic as IMPLIES
         "CONDITIONED_ON": (not source_yes or related_yes, 0.5, -0.6),
-        # WEAK_SIGNAL: correlated, outcomes should match
         "WEAK_SIGNAL": (source_yes == related_yes, 0.2, -0.3),
     }
 
@@ -395,18 +319,11 @@ def evaluate_relationship(source_outcome: str, related_outcome: str, relationshi
 
     return False, -0.5
 
-
-# LLM-based evaluator for smarter assessment
-USE_LLM_EVALUATOR = True  # Toggle between hardcoded and LLM evaluation
+USE_LLM_EVALUATOR = True
 
 def evaluate_with_llm(source_question: str, source_outcome: str,
                       related_question: str, related_outcome: str,
                       relationship: str, reasoning: str) -> Tuple[bool, float, str]:
-    """
-    Phoenix-style LLM Evaluator: Uses GPT to judge if the prediction was correct.
-
-    Returns: (held: bool, score: float, explanation: str)
-    """
     eval_prompt = f"""You are evaluating a prediction market relationship prediction.
 
 SOURCE MARKET:
@@ -438,7 +355,7 @@ Return JSON:
 
     try:
         completion = openai_client.chat.completions.create(
-            model="gpt-4o-mini",  # Fast model for evaluation
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a prediction market analyst evaluating relationship predictions. Be strict but fair."},
                 {"role": "user", "content": eval_prompt}
@@ -453,25 +370,19 @@ Return JSON:
         confidence = result.get("confidence", 0.5)
         explanation = result.get("explanation", "")
 
-        # Convert to profit score
         profit = confidence * 0.8 if held else -confidence * 0.7
 
         return held, profit, explanation
 
     except Exception as e:
-        # Fallback to hardcoded evaluation
         held, profit = evaluate_relationship(source_outcome, related_outcome, relationship)
         return held, profit, f"Fallback: {e}"
 
-
 def test_prompt_on_topics(prompt: str, market_sets: Dict[str, List[Market]], tests_per_topic: int = 2, candidates_per_test: int = 10) -> Tuple[List[TestResult], List[Prediction], List[Prediction]]:
-    """Test a prompt using topic-grouped markets for meaningful relationships"""
-
     results = []
     all_good = []
     all_bad = []
     test_num = 0
-    first_debug = True
 
     for topic, markets in market_sets.items():
         if len(markets) < 3:
@@ -482,39 +393,23 @@ def test_prompt_on_topics(prompt: str, market_sets: Dict[str, List[Market]], tes
         for i in range(min(tests_per_topic, len(markets))):
             test_num += 1
             source = markets[i]
-            # Use OTHER markets from SAME topic as candidates (more likely to be related!)
             candidates = [m for m in markets if m.id != source.id][:candidates_per_test]
             candidate_map = {c.id: c for c in candidates}
 
             print(C.dim(f"      [{test_num}] {source.question[:45]}..."))
 
-            # Debug first test only
-            debug = first_debug
-            if debug:
-                print(f"        [DEBUG] Source: {source.question[:60]}")
-                print(f"        [DEBUG] Candidates from same topic:")
-                for c in candidates[:3]:
-                    print(f"          - {c.question[:50]}...")
-                first_debug = False
-
-            raw_predictions = run_prompt(prompt, source, candidates, debug=debug)
+            raw_predictions = run_prompt(prompt, source, candidates)
             predictions = []
-
-            if debug:
-                print(f"        [DEBUG] Model returned {len(raw_predictions)} predictions")
 
             for pred in raw_predictions:
                 market_id = pred.get("marketId")
                 if not market_id or market_id not in candidate_map:
-                    if debug and market_id:
-                        print(f"        [DEBUG] ID mismatch: '{market_id[:20]}...' not found")
                     continue
 
                 related = candidate_map[market_id]
                 relationship = pred.get("relationship", "WEAK_SIGNAL")
                 reasoning = pred.get("reasoning", "")
 
-                # Use LLM evaluator or hardcoded logic
                 if USE_LLM_EVALUATOR:
                     held, profit, _ = evaluate_with_llm(
                         source.question, source.outcome,
@@ -548,13 +443,7 @@ def test_prompt_on_topics(prompt: str, market_sets: Dict[str, List[Market]], tes
 
     return results, all_good, all_bad
 
-# ============================================================
-# PROMPT OPTIMIZATION LAYERS
-# ============================================================
-
 def build_few_shot_section(good_examples: List[Prediction], max_examples: int = 3) -> str:
-    """Build few-shot examples section from successful predictions"""
-
     if not good_examples:
         return ""
 
@@ -572,12 +461,9 @@ Reasoning: {p.reasoning}
     return "\n".join(lines)
 
 def build_warnings_section(bad_examples: List[Prediction]) -> str:
-    """Build warnings section from failed predictions"""
-
     if not bad_examples:
         return ""
 
-    # Group by relationship type
     by_type: Dict[str, List[Prediction]] = {}
     for p in bad_examples:
         if p.relationship not in by_type:
@@ -596,8 +482,6 @@ def build_warnings_section(bad_examples: List[Prediction]) -> str:
     return "\n".join(lines)
 
 def mutate_prompt_with_llm(current_prompt: str, accuracy: float, profit: float, bad_examples: List[Prediction]) -> str:
-    """Use GPT-4 to intelligently improve the prompt"""
-
     print("    Using GPT-4 to analyze and improve prompt...")
 
     failure_analysis = []
@@ -647,7 +531,6 @@ Be specific, add bullet points, and make it noticeably better than the original.
 
         improved_section = completion.choices[0].message.content
         if improved_section and len(improved_section) > 100:
-            # Replace the relationship section in the prompt
             start = current_prompt.find("Relationship Types:")
             end = current_prompt.find("Return JSON")
 
@@ -660,15 +543,10 @@ Be specific, add bullet points, and make it noticeably better than the original.
 
     return current_prompt
 
-# ============================================================
-# PHOENIX EXPERIMENT LOGGING
-# ============================================================
-
-experiment_results = []  # Store results for Phoenix experiment
+experiment_results = []
 
 def log_experiment_result(iteration: int, prompt_name: str, accuracy: float, profit: float,
                           total: int, correct: int, changes: List[str]):
-    """Log iteration result for Phoenix experiment tracking"""
     result = {
         "iteration": iteration,
         "prompt_name": prompt_name,
@@ -681,21 +559,17 @@ def log_experiment_result(iteration: int, prompt_name: str, accuracy: float, pro
     }
     experiment_results.append(result)
 
-    # If Phoenix client is available, try to log to experiments
     if phoenix_client:
         try:
-            # Log as a span annotation (experiment tracking)
             print(C.dim(f"      [Phoenix] Logged iteration {iteration} to experiments"))
         except Exception as e:
-            pass  # Silent fail for experiment logging
+            pass
 
 def save_experiment_to_phoenix(experiment_name: str):
-    """Save the complete experiment run to Phoenix"""
     if not phoenix_client or not experiment_results:
         return
 
     try:
-        # Create experiment summary
         summary = {
             "name": experiment_name,
             "timestamp": datetime.now().isoformat(),
@@ -709,7 +583,6 @@ def save_experiment_to_phoenix(experiment_name: str):
             }
         }
 
-        # Save to output for Phoenix to pick up via traces
         output_dir = Path(__file__).parent / "output"
         output_dir.mkdir(exist_ok=True)
         experiment_file = output_dir / f"experiment_{experiment_name}.json"
@@ -721,21 +594,13 @@ def save_experiment_to_phoenix(experiment_name: str):
     except Exception as e:
         print(C.warn(f"  ⚠ Experiment save failed: {e}"))
 
-
-# ============================================================
-# MAIN OPTIMIZATION LOOP
-# ============================================================
-
 def optimize():
-    """Main multi-layer optimization loop with Phoenix experiment tracking"""
     global experiment_results
-    experiment_results = []  # Reset for new run
+    experiment_results = []
 
-    # Generate experiment name
     experiment_name = f"opt_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     print(C.info(f"[Experiment] Starting: {experiment_name}"))
 
-    # ========== STEP 1: LOAD DATA ==========
     print("\n" + C.BLUE + "="*65 + C.RESET)
     print(C.bold(C.BLUE + "STEP 1: LOADING DATA" + C.RESET))
     print(C.BLUE + "="*65 + C.RESET)
@@ -751,7 +616,6 @@ def optimize():
         for m in markets[:2]:
             print(f"      [{m.outcome}] {m.question[:50]}...")
 
-    # ========== STEP 2: BASELINE TEST ==========
     print("\n" + C.CYAN + "="*65 + C.RESET)
     print(C.bold(C.CYAN + "STEP 2: BASELINE TEST (Current Prompt)" + C.RESET))
     print(C.CYAN + "="*65 + C.RESET)
@@ -774,14 +638,20 @@ def optimize():
     acc_color = C.GREEN if accuracy >= 50 else C.YELLOW if accuracy >= 25 else C.RED
     profit_color = C.GREEN if profit >= 0.1 else C.YELLOW if profit >= 0 else C.RED
 
-    print(f"\n  {C.CYAN}┌─────────────────────────────────────┐{C.RESET}")
-    print(f"  {C.CYAN}│{C.RESET} {C.BOLD}BASELINE RESULTS{C.RESET}                    {C.CYAN}│{C.RESET}")
-    print(f"  {C.CYAN}├─────────────────────────────────────┤{C.RESET}")
-    print(f"  {C.CYAN}│{C.RESET} Accuracy:     {acc_color}{accuracy:5.1f}%{C.RESET} ({correct}/{total})     {C.CYAN}│{C.RESET}")
-    print(f"  {C.CYAN}│{C.RESET} Profit Score: {profit_color}{profit:+5.2f}{C.RESET}                 {C.CYAN}│{C.RESET}")
-    print(f"  {C.CYAN}│{C.RESET} Good examples: {C.GREEN}{len(good_examples):3}{C.RESET}                  {C.CYAN}│{C.RESET}")
-    print(f"  {C.CYAN}│{C.RESET} Bad examples:  {C.RED}{len(bad_examples):3}{C.RESET}                  {C.CYAN}│{C.RESET}")
-    print(f"  {C.CYAN}└─────────────────────────────────────┘{C.RESET}")
+    box_width = 45
+    acc_line = f"Accuracy:      {accuracy:5.1f}% ({correct}/{total:2})"
+    profit_line = f"Profit Score:  {profit:+5.2f}"
+    good_line = f"Good examples: {len(good_examples):3}"
+    bad_line = f"Bad examples:  {len(bad_examples):3}"
+
+    print(f"\n  {C.CYAN}┌─────────────────────────────────────────────┐{C.RESET}")
+    print(f"  {C.CYAN}│{C.RESET} {C.BOLD}BASELINE RESULTS{C.RESET}{' ' * (box_width - 16)}│{C.RESET}")
+    print(f"  {C.CYAN}├─────────────────────────────────────────────┤{C.RESET}")
+    print(f"  {C.CYAN}│{C.RESET} {acc_color}{acc_line}{C.RESET}{' ' * (box_width - len(acc_line))}│{C.RESET}")
+    print(f"  {C.CYAN}│{C.RESET} {profit_color}{profit_line}{C.RESET}{' ' * (box_width - len(profit_line))}│{C.RESET}")
+    print(f"  {C.CYAN}│{C.RESET} {C.GREEN}{good_line}{C.RESET}{' ' * (box_width - len(good_line))}│{C.RESET}")
+    print(f"  {C.CYAN}│{C.RESET} {C.RED}{bad_line}{C.RESET}{' ' * (box_width - len(bad_line))}│{C.RESET}")
+    print(f"  {C.CYAN}└─────────────────────────────────────────────┘{C.RESET}")
 
     iterations: List[IterationResult] = []
     iterations.append(IterationResult(
@@ -797,26 +667,26 @@ def optimize():
         changes_made=["Initial baseline test"]
     ))
 
-    # Log baseline to Phoenix experiment
     log_experiment_result(0, "baseline", accuracy, profit, total, correct, ["Initial baseline test"])
 
     best_prompt = current_prompt
     best_accuracy = accuracy
     best_profit = profit
 
-    # Check if already good enough
     if accuracy >= CONFIG["target_accuracy"] and profit >= CONFIG["target_profit"]:
         print("\n  ✓ Baseline already meets targets!")
     else:
-        # ========== OPTIMIZATION ITERATIONS ==========
+        print("\n" + C.YELLOW + "="*65 + C.RESET)
+        print(C.bold(C.YELLOW + "STEP 3: OPTIMIZATION ITERATIONS" + C.RESET))
+        print(C.YELLOW + "="*65 + C.RESET)
+
         for iteration in range(1, CONFIG["max_iterations"] + 1):
-            print("\n" + C.YELLOW + "="*65 + C.RESET)
-            print(C.bold(C.YELLOW + f"ITERATION {iteration}: OPTIMIZATION" + C.RESET))
-            print(C.YELLOW + "="*65 + C.RESET)
+            print("\n" + C.YELLOW + "---" + " "*59 + "---" + C.RESET)
+            print(C.bold(C.YELLOW + f"  ITERATION {iteration}" + C.RESET))
+            print(C.YELLOW + "---" + " "*59 + "---" + C.RESET)
 
             changes = []
 
-            # Layer 1: Add few-shot examples
             print(C.info("\n  [Layer 1] Adding few-shot examples..."))
             few_shot = build_few_shot_section(good_examples, CONFIG["few_shot_examples"])
             if few_shot:
@@ -825,7 +695,6 @@ def optimize():
             else:
                 print(C.warn("    ⚠ No good examples to add"))
 
-            # Layer 2: Add warnings
             print(C.info("\n  [Layer 2] Adding warning patterns..."))
             warnings = build_warnings_section(bad_examples)
             if warnings:
@@ -834,18 +703,15 @@ def optimize():
             else:
                 print(C.warn("    ⚠ No warnings to add"))
 
-            # Build new prompt using safe replacement
             new_prompt = BASE_PROMPT
             new_prompt = new_prompt.replace("{few_shot_section}", few_shot)
             new_prompt = new_prompt.replace("{warnings_section}", warnings)
 
-            # Layer 3: LLM mutation - trigger on iteration 2+ OR if accuracy is low
             if iteration >= 2 or accuracy < 40:
                 print(C.header("\n  [Layer 3] LLM-based prompt mutation..."))
                 new_prompt = mutate_prompt_with_llm(new_prompt, accuracy, profit, bad_examples)
                 changes.append("Applied LLM-based prompt mutation")
 
-            # Test the new prompt
             print(C.info("\n  [Testing] Running optimized prompt..."))
             results, good_examples, bad_examples = test_prompt_on_topics(
                 new_prompt,
@@ -868,14 +734,21 @@ def optimize():
             acc_change_color = C.GREEN if improvement_acc > 0 else C.RED if improvement_acc < 0 else C.YELLOW
             profit_change_color = C.GREEN if improvement_profit > 0 else C.RED if improvement_profit < 0 else C.YELLOW
 
-            print(f"\n  {C.YELLOW}┌─────────────────────────────────────┐{C.RESET}")
-            print(f"  {C.YELLOW}│{C.RESET} {C.BOLD}ITERATION {iteration} RESULTS{C.RESET}                 {C.YELLOW}│{C.RESET}")
-            print(f"  {C.YELLOW}├─────────────────────────────────────┤{C.RESET}")
-            print(f"  {C.YELLOW}│{C.RESET} Accuracy:     {acc_color}{accuracy:5.1f}%{C.RESET} ({correct}/{total})     {C.YELLOW}│{C.RESET}")
-            print(f"  {C.YELLOW}│{C.RESET} Profit Score: {profit_color}{profit:+5.2f}{C.RESET}                 {C.YELLOW}│{C.RESET}")
-            print(f"  {C.YELLOW}│{C.RESET} Acc Change:   {acc_change_color}{improvement_acc:+5.1f}%{C.RESET}                {C.YELLOW}│{C.RESET}")
-            print(f"  {C.YELLOW}│{C.RESET} Profit Change:{profit_change_color}{improvement_profit:+5.2f}{C.RESET}                 {C.YELLOW}│{C.RESET}")
-            print(f"  {C.YELLOW}└─────────────────────────────────────┘{C.RESET}")
+            # Calculate padding for proper alignment (box width - visible chars)
+            box_width = 45
+            acc_line = f"Accuracy:      {accuracy:5.1f}% ({correct}/{total:2})"
+            profit_line = f"Profit Score:  {profit:+5.2f}"
+            acc_change_line = f"Acc Change:    {improvement_acc:+5.1f}%"
+            profit_change_line = f"Profit Change: {improvement_profit:+5.2f}"
+
+            print(f"\n  {C.YELLOW}┌─────────────────────────────────────────────┐{C.RESET}")
+            print(f"  {C.YELLOW}│{C.RESET} {C.BOLD}ITERATION {iteration} RESULTS{C.RESET}{' ' * (box_width - 19)}│{C.RESET}")
+            print(f"  {C.YELLOW}├─────────────────────────────────────────────┤{C.RESET}")
+            print(f"  {C.YELLOW}│{C.RESET} {acc_color}{acc_line}{C.RESET}{' ' * (box_width - len(acc_line))}│{C.RESET}")
+            print(f"  {C.YELLOW}│{C.RESET} {profit_color}{profit_line}{C.RESET}{' ' * (box_width - len(profit_line))}│{C.RESET}")
+            print(f"  {C.YELLOW}│{C.RESET} {acc_change_color}{acc_change_line}{C.RESET}{' ' * (box_width - len(acc_change_line))}│{C.RESET}")
+            print(f"  {C.YELLOW}│{C.RESET} {profit_change_color}{profit_change_line}{C.RESET}{' ' * (box_width - len(profit_change_line))}│{C.RESET}")
+            print(f"  {C.YELLOW}└─────────────────────────────────────────────┘{C.RESET}")
 
             iterations.append(IterationResult(
                 iteration=iteration,
@@ -890,24 +763,20 @@ def optimize():
                 changes_made=changes
             ))
 
-            # Log to Phoenix experiment
             log_experiment_result(iteration, f"iteration_{iteration}", accuracy, profit, total, correct, changes)
 
-            # Keep best
             if accuracy > best_accuracy or (accuracy == best_accuracy and profit > best_profit):
                 best_prompt = new_prompt
                 best_accuracy = accuracy
                 best_profit = profit
                 print(C.success(C.BOLD + "  ★ New best prompt!" + C.RESET))
 
-            # Check if we've reached targets
             if accuracy >= CONFIG["target_accuracy"] and profit >= CONFIG["target_profit"]:
                 print(C.success(f"\n  ✓ Reached target accuracy ({CONFIG['target_accuracy']}%) and profit ({CONFIG['target_profit']})!"))
                 break
 
-    # ========== SAVE RESULTS ==========
     print("\n" + C.GREEN + "="*65 + C.RESET)
-    print(C.bold(C.GREEN + "SAVING RESULTS" + C.RESET))
+    print(C.bold(C.GREEN + "STEP 4: SAVING RESULTS" + C.RESET))
     print(C.GREEN + "="*65 + C.RESET)
 
     output_dir = Path(__file__).parent / "output"
@@ -917,17 +786,14 @@ def optimize():
     acc_str = f"{best_accuracy:.0f}acc"
     profit_str = f"{best_profit:.2f}profit".replace(".", "p").replace("-", "neg")
 
-    # Save optimized prompt - clear naming
     prompt_latest = output_dir / "BEST_PROMPT.txt"
     prompt_latest.write_text(best_prompt)
     print(C.success(f"\n  ✓ Saved: {C.BOLD}{prompt_latest.name}{C.RESET}"))
 
-    # Versioned copy with metrics in filename
     prompt_versioned = output_dir / f"prompt_{timestamp}_{acc_str}_{profit_str}.txt"
     prompt_versioned.write_text(best_prompt)
     print(C.success(f"  ✓ Saved: {prompt_versioned.name}"))
 
-    # Save detailed report
     report = {
         "timestamp": datetime.now().isoformat(),
         "config": CONFIG,
@@ -944,12 +810,10 @@ def optimize():
         "iterations": [asdict(i) for i in iterations]
     }
 
-    # JSON data for programmatic use
     json_file = output_dir / "optimization_data.json"
     json_file.write_text(json.dumps(report, indent=2, default=str))
     print(C.success(f"  ✓ Saved: {json_file.name}"))
 
-    # Save human-readable report
     md_report = f"""# Prompt Optimization Report
 Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
@@ -987,10 +851,8 @@ Project: `polyindex-optimizer`
     md_file.write_text(md_report)
     print(C.success(f"  ✓ Saved: {md_file.name}"))
 
-    # Save experiment to Phoenix
     save_experiment_to_phoenix(experiment_name)
 
-    # ========== FINAL SUMMARY ==========
     final_acc_color = C.GREEN if best_accuracy >= 50 else C.YELLOW if best_accuracy >= 25 else C.RED
     final_profit_color = C.GREEN if best_profit >= 0.1 else C.YELLOW if best_profit >= 0 else C.RED
     change_acc = best_accuracy - iterations[0].accuracy
@@ -998,22 +860,35 @@ Project: `polyindex-optimizer`
     change_acc_color = C.GREEN if change_acc > 0 else C.RED if change_acc < 0 else C.YELLOW
     change_profit_color = C.GREEN if change_profit > 0 else C.RED if change_profit < 0 else C.YELLOW
 
-    print(f"\n{C.GREEN}╔{'═'*63}╗{C.RESET}")
-    print(f"{C.GREEN}║{C.RESET}{C.BOLD}{'OPTIMIZATION COMPLETE':^63}{C.RESET}{C.GREEN}║{C.RESET}")
-    print(f"{C.GREEN}╠{'═'*63}╣{C.RESET}")
-    print(f"{C.GREEN}║{C.RESET}  Baseline Accuracy:  {C.DIM}{iterations[0].accuracy:5.1f}%{C.RESET}                                  {C.GREEN}║{C.RESET}")
-    print(f"{C.GREEN}║{C.RESET}  Final Accuracy:     {final_acc_color}{best_accuracy:5.1f}%{C.RESET}  ({change_acc_color}{change_acc:+.1f}%{C.RESET})                          {C.GREEN}║{C.RESET}")
-    print(f"{C.GREEN}║{C.RESET}  Baseline Profit:    {C.DIM}{iterations[0].profit_score:+5.2f}{C.RESET}                                   {C.GREEN}║{C.RESET}")
-    print(f"{C.GREEN}║{C.RESET}  Final Profit:       {final_profit_color}{best_profit:+5.2f}{C.RESET}  ({change_profit_color}{change_profit:+.2f}{C.RESET})                           {C.GREEN}║{C.RESET}")
-    print(f"{C.GREEN}║{C.RESET}  Iterations:         {C.CYAN}{len(iterations) - 1}{C.RESET}                                       {C.GREEN}║{C.RESET}")
-    print(f"{C.GREEN}╠{'═'*63}╣{C.RESET}")
-    print(f"{C.GREEN}║{C.RESET}  {C.BOLD}Output Files:{C.RESET}                                                {C.GREEN}║{C.RESET}")
-    print(f"{C.GREEN}║{C.RESET}    • {C.CYAN}BEST_PROMPT.txt{C.RESET}          {C.DIM}(use this!){C.RESET}     {C.GREEN}║{C.RESET}")
-    print(f"{C.GREEN}║{C.RESET}    • {C.CYAN}OPTIMIZATION_REPORT.md{C.RESET}   {C.DIM}(summary){C.RESET}       {C.GREEN}║{C.RESET}")
-    print(f"{C.GREEN}║{C.RESET}    • {C.CYAN}optimization_data.json{C.RESET}   {C.DIM}(raw data){C.RESET}      {C.GREEN}║{C.RESET}")
-    print(f"{C.GREEN}╠{'═'*63}╣{C.RESET}")
-    print(f"{C.GREEN}║{C.RESET}  Phoenix UI: {C.HEADER}http://localhost:6006{C.RESET}                           {C.GREEN}║{C.RESET}")
-    print(f"{C.GREEN}╚{'═'*63}╝{C.RESET}\n")
+    box_width = 63
+
+    baseline_acc_line = f"  Baseline Accuracy:  {iterations[0].accuracy:5.1f}%"
+    final_acc_line = f"  Final Accuracy:     {best_accuracy:5.1f}%  ({change_acc:+.1f}%)"
+    baseline_profit_line = f"  Baseline Profit:    {iterations[0].profit_score:+5.2f}"
+    final_profit_line = f"  Final Profit:       {best_profit:+5.2f}  ({change_profit:+.2f})"
+    iterations_line = f"  Iterations:         {len(iterations) - 1}"
+    output_header_line = f"  Output Files:"
+    file1_line = f"    • BEST_PROMPT.txt          (use this!)"
+    file2_line = f"    • OPTIMIZATION_REPORT.md   (summary)"
+    file3_line = f"    • optimization_data.json   (raw data)"
+    phoenix_line = f"  Phoenix UI: http://localhost:6006"
+
+    print(f"\n{C.GREEN}╔{'═'*box_width}╗{C.RESET}")
+    print(f"{C.GREEN}║{C.RESET}{C.BOLD}{'OPTIMIZATION COMPLETE':^{box_width}}{C.RESET}{C.GREEN}║{C.RESET}")
+    print(f"{C.GREEN}╠{'═'*box_width}╣{C.RESET}")
+    print(f"{C.GREEN}║{C.RESET}{C.DIM}{baseline_acc_line}{C.RESET}{' ' * (box_width - len(baseline_acc_line))}{C.GREEN}║{C.RESET}")
+    print(f"{C.GREEN}║{C.RESET}{final_acc_color}{final_acc_line}{C.RESET}{' ' * (box_width - len(final_acc_line))}{C.GREEN}║{C.RESET}")
+    print(f"{C.GREEN}║{C.RESET}{C.DIM}{baseline_profit_line}{C.RESET}{' ' * (box_width - len(baseline_profit_line))}{C.GREEN}║{C.RESET}")
+    print(f"{C.GREEN}║{C.RESET}{final_profit_color}{final_profit_line}{C.RESET}{' ' * (box_width - len(final_profit_line))}{C.GREEN}║{C.RESET}")
+    print(f"{C.GREEN}║{C.RESET}{C.CYAN}{iterations_line}{C.RESET}{' ' * (box_width - len(iterations_line))}{C.GREEN}║{C.RESET}")
+    print(f"{C.GREEN}╠{'═'*box_width}╣{C.RESET}")
+    print(f"{C.GREEN}║{C.RESET}{C.BOLD}{output_header_line}{C.RESET}{' ' * (box_width - len(output_header_line))}{C.GREEN}║{C.RESET}")
+    print(f"{C.GREEN}║{C.RESET}{C.CYAN}{file1_line}{C.RESET}{' ' * (box_width - len(file1_line))}{C.GREEN}║{C.RESET}")
+    print(f"{C.GREEN}║{C.RESET}{C.CYAN}{file2_line}{C.RESET}{' ' * (box_width - len(file2_line))}{C.GREEN}║{C.RESET}")
+    print(f"{C.GREEN}║{C.RESET}{C.CYAN}{file3_line}{C.RESET}{' ' * (box_width - len(file3_line))}{C.GREEN}║{C.RESET}")
+    print(f"{C.GREEN}╠{'═'*box_width}╣{C.RESET}")
+    print(f"{C.GREEN}║{C.RESET}{C.HEADER}{phoenix_line}{C.RESET}{' ' * (box_width - len(phoenix_line))}{C.GREEN}║{C.RESET}")
+    print(f"{C.GREEN}╚{'═'*box_width}╝{C.RESET}\n")
 
 if __name__ == "__main__":
     start_time = time.time()

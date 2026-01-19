@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { parseMarketInput } from '../lib/url-parser';
-import { findRelatedBets } from '../lib/related-bets-finder';
+import { findRelatedBets, type FoundRelatedBet } from '../lib/related-bets-finder';
 import { fetchMarket } from '../lib/polymarket-api';
 import type { Logger, LogLevel } from '../lib/logger';
 
@@ -14,6 +14,33 @@ function formatLogPayload(level: LogLevel, message: string, meta?: unknown): str
 
 function formatFinalPayload(payload: unknown): string {
   return `final - ${JSON.stringify(payload)}`;
+}
+
+async function resolveBetSlug(
+  bet: FoundRelatedBet,
+  cache: Map<string, string | null>,
+  logger: Logger
+): Promise<string | undefined> {
+  const directSlug = bet.eventSlug || bet.market.market_slug || bet.market.event_slug;
+  if (directSlug) {
+    return directSlug;
+  }
+
+  if (cache.has(bet.marketId)) {
+    const cached = cache.get(bet.marketId);
+    return cached || undefined;
+  }
+
+  try {
+    const market = await fetchMarket(bet.marketId, logger);
+    const fetchedSlug = market.market_slug || market.event_slug;
+    cache.set(bet.marketId, fetchedSlug || null);
+    return fetchedSlug || undefined;
+  } catch (error) {
+    logger('warn', `Failed to resolve slug for market ${bet.marketId}`, error);
+    cache.set(bet.marketId, null);
+    return undefined;
+  }
 }
 
 function createSseLogger(stream: any): Logger {
@@ -94,6 +121,27 @@ relatedBetsRouter.post('/', (c) => {
         logger('log', `Cut down from ${relatedBets.length} to 4 related bets`);
       }
 
+      const slugCache = new Map<string, string | null>();
+      const relatedBetsPayload = await Promise.all(finalRelatedBets.map(async (bet) => {
+        const slug = await resolveBetSlug(bet, slugCache, logger);
+        const url = slug ? `https://polymarket.com/event/${slug}` : undefined;
+
+        if (!url) {
+          logger('warn', `No URL for market ${bet.marketId}: ${bet.market.question}`);
+        }
+
+        return {
+          marketId: bet.marketId,
+          question: bet.market.question,
+          slug,
+          url,
+          relationship: bet.relationship,
+          reasoning: bet.reasoning,
+          yesPercentage: bet.yesPercentage,
+          noPercentage: bet.noPercentage,
+        };
+      }));
+
       // Stream final results in clean format
       await stream.writeSSE({
         data: formatFinalPayload({
@@ -102,26 +150,7 @@ relatedBetsRouter.post('/', (c) => {
             question: sourceMarket.question,
             slug: sourceMarket.market_slug,
           },
-          relatedBets: finalRelatedBets.map(bet => {
-            // Use event slug if available (for markets from events), otherwise market slug
-            const slug = bet.eventSlug || bet.market.market_slug;
-            const url = slug ? `https://polymarket.com/event/${slug}` : undefined;
-
-            if (!url) {
-              logger('warn', `No URL for market ${bet.marketId}: ${bet.market.question}`);
-            }
-
-            return {
-              marketId: bet.marketId,
-              question: bet.market.question,
-              slug,
-              url,
-              relationship: bet.relationship,
-              reasoning: bet.reasoning,
-              yesPercentage: bet.yesPercentage,
-              noPercentage: bet.noPercentage,
-            };
-          }),
+          relatedBets: relatedBetsPayload,
         }),
       });
     } catch (error) {

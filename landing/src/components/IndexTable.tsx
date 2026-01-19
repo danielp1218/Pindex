@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const indexData = [
   { name: 'Politics Index', logo: '/indextable/politic.png', account: 'Primary Account', performance: '+12.5%', amount: '+$18,750.00', status: 'Active' },
   { name: 'Crypto Index', logo: '/indextable/crypto.png', account: 'Crypto Index', performance: '+5.2%', amount: '+$7,800.00', status: 'Active' },
@@ -9,7 +11,7 @@ const indexData = [
 
 export function IndexTable() {
   return (
-    <div className="bg-[#1a2332]/80 backdrop-blur-sm rounded-xl overflow-hidden w-full border border-white/10">
+    <div className="bg-[#1a2332]/90 rounded-xl overflow-hidden w-full border border-white/10">
       {/* Desktop Header */}
       <div className="hidden md:grid grid-cols-[1fr_1fr_1fr_120px] border-b border-white/10">
         <div className="px-5 py-4 border-r border-white/10">
@@ -32,7 +34,14 @@ export function IndexTable() {
             {/* Desktop Layout */}
             <div className="hidden md:grid grid-cols-[1fr_1fr_1fr_120px]">
               <div className="px-5 py-4 flex items-center gap-3 border-r border-white/10">
-                <img src={item.logo} alt={item.name} className="w-8 h-8 rounded-lg object-cover" />
+                <Image
+                  src={item.logo}
+                  alt={item.name}
+                  width={32}
+                  height={32}
+                  sizes="32px"
+                  className="w-8 h-8 rounded-lg object-cover"
+                />
                 <span className="text-white text-sm">{item.name}</span>
               </div>
               <div className="px-5 py-4 flex items-center border-r border-white/10">
@@ -57,7 +66,14 @@ export function IndexTable() {
             {/* Mobile Layout */}
             <div className="md:hidden p-4 space-y-3">
               <div className="flex items-center gap-3">
-                <img src={item.logo} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                <Image
+                  src={item.logo}
+                  alt={item.name}
+                  width={40}
+                  height={40}
+                  sizes="40px"
+                  className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="text-white text-sm font-medium">{item.name}</div>
                   <div className="text-xs text-gray-400 mt-0.5">{item.account}</div>

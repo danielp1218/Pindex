@@ -2,6 +2,7 @@ export interface PolymarketMarket {
   id: string;
   condition_id?: string;
   market_slug?: string;
+  event_slug?: string;
   question: string;
   description: string;
   outcomes?: string[];

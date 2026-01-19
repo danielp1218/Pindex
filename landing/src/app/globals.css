@@ -1,11 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@source "../**/*.{ts,tsx}";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-serif: 'Playfair Display', Georgia, serif;
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-inter);
 }
 
 @theme inline {

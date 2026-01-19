@@ -13,11 +13,8 @@ RUN cd packages/relations-engine && npm install && npm run build
 # Copy source code
 COPY . .
 
-# Build TypeScript
-RUN npm run build
-
 # Expose port
 EXPOSE 8000
 
-# Start server
-CMD ["npm", "start"]
+# Start server with wrangler dev
+CMD ["npm", "run", "dev", "--", "--port", "8000", "--ip", "0.0.0.0"]

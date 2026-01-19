@@ -122,15 +122,16 @@ export function priceCompactDependants(
         dependant.probability
       );
     const edge = targetProbability - dependant.probability;
-    const adjustedEdge = Math.max(0, Math.abs(edge) - effectiveEpsilon);
-    const normalizedEdge =
-      1 - effectiveEpsilon > 0
-        ? Math.min(1, adjustedEdge / (1 - effectiveEpsilon))
+    const edgeMagnitude = Math.abs(edge);
+    // Soft-threshold edges to avoid zeroing out small but real signals.
+    const adjustedEdge =
+      edgeMagnitude > 0
+        ? (edgeMagnitude * edgeMagnitude) / (edgeMagnitude + effectiveEpsilon)
         : 0;
-    const decision = adjustedEdge > 0 ? (edge > 0 ? 'yes' : 'no') : rootDecision;
+    const decision = edgeMagnitude > 0 ? (edge > 0 ? 'yes' : 'no') : rootDecision;
     const weight =
-      adjustedEdge > 0
-        ? rootWeight * Math.pow(normalizedEdge, riskExponent)
+      edgeMagnitude > 0
+        ? rootWeight * Math.pow(adjustedEdge, riskExponent)
         : 0;
 
     return {

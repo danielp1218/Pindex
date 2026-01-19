@@ -661,6 +661,7 @@ function App() {
         onViewNodes={() => setCurrentScreen('visualize')}
         onDecision={handleDecision}
         isProcessing={decisionDisabled}
+        hasDecisionTarget={Boolean(displayItem)}
         miniGraphData={miniGraphData}
         showUserSelection={Boolean(rootFallbackItem && !queuedItem)}
         globalsBaseline={globalsBaseline}

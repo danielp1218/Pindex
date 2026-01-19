@@ -157,7 +157,7 @@ Return JSON array of 2-4 short keywords:
     const content = completion.choices[0].message.content?.trim() || '{}';
     const result = JSON.parse(content);
     const keywords = result.keywords || [];
-    
+
     logMessage(
       logger,
       'log',
@@ -183,14 +183,14 @@ async function selectRelevantEvents(
 ): Promise<string[]> {
   // Filter out visited slugs first
   const unvisitedEvents = events.filter(e => !visitedSlugs.includes(e.slug));
-  
+
   if (unvisitedEvents.length === 0) {
     logMessage(logger, 'log', 'No unvisited events found after filtering');
     return [];
   }
 
   try {
-    const eventsContext = unvisitedEvents.map(e => 
+    const eventsContext = unvisitedEvents.map(e =>
       `Slug: ${e.slug}\nTitle: ${e.title}\nDescription: ${e.description?.substring(0, 150) || 'N/A'}`
     ).join('\n\n---\n\n');
 
@@ -314,22 +314,22 @@ export function getMarketPercentages(
   if (market.outcomePrices) {
     try {
       let prices = market.outcomePrices;
-      
+
       // Parse if string
       if (typeof prices === 'string') {
         prices = JSON.parse(prices);
       }
-      
+
       // Validate array
       if (Array.isArray(prices) && prices.length >= 2) {
         const price0 = parseFloat(String(prices[0]));
         const price1 = parseFloat(String(prices[1]));
-        
+
         // Validate parsed numbers
         if (!isNaN(price0) && !isNaN(price1)) {
           // Check if prices are already in percentage form (0-100) or decimal form (0-1)
           const isPercentage = price0 > 1 || price1 > 1;
-          
+
           if (isPercentage) {
             return {
               yes: parseFloat(price0.toFixed(2)),
@@ -382,7 +382,7 @@ export function getMarketPercentages(
       `Unable to extract prices for market ${market.id || market.conditionId}. No price fields found. Using 50-50 fallback.`
     );
   }
-  
+
   return { yes: 50.0, no: 50.0 };
 }
 
@@ -411,38 +411,33 @@ export async function* findRelatedBets(
   const MAX_RESULTS = Math.max(1, Math.floor(requestedMax)); // Maximum number of related bets to return
   const MIN_RESULTS = Math.max(0, Math.min(MAX_RESULTS, Math.floor(requestedMin))); // Minimum target
   let foundCount = 0;
-  const SEARCH_CONCURRENCY = 3;
   const EVENT_MARKETS_CONCURRENCY = 4;
   const LLM_BATCH_CONCURRENCY = 2;
 
   // New workflow: Generate keywords → Search events → LLM selects events → Fetch markets
   let eventMarkets: any[] = [];
-  
+
   try {
     logMessage(logger, 'log', 'Starting keyword-based event search...');
-    
+
     // Step 1: Generate search keywords using LLM (returns array)
     const keywords = await generateSearchKeywords(sourceMarket, c, logger);
-    
+
+
+
     // Step 2: Search for events using each keyword individually and combine results
+
     const allEvents: PolymarketEvent[] = [];
     const seenEventSlugs = new Set<string>();
 
-    const keywordResults = await mapWithConcurrency(
-      keywords,
-      SEARCH_CONCURRENCY,
-      async (keyword) => {
-        const keywordEvents = await searchEventsByKeywords(keyword, logger);
-        logMessage(
-          logger,
-          'log',
-          `Found ${keywordEvents.length} events for keyword "${keyword}"`
-        );
-        return keywordEvents;
-      }
-    );
+    for (const keyword of keywords) {
+      const keywordEvents = await searchEventsByKeywords(keyword, logger);
+      logMessage(
+        logger,
+        'log',
+        `Found ${keywordEvents.length} events for keyword "${keyword}"`
+      );
 
-    for (const keywordEvents of keywordResults) {
       for (const event of keywordEvents) {
         if (!seenEventSlugs.has(event.slug)) {
           seenEventSlugs.add(event.slug);
@@ -450,15 +445,15 @@ export async function* findRelatedBets(
         }
       }
     }
-    
+
     logMessage(
       logger,
       'log',
       `Total unique events from all keywords: ${allEvents.length}`
     );
-    
+
     let events = allEvents;
-    
+
     // Step 3: Fallback to category-based search if no results
     if (events.length === 0) {
       logMessage(logger, 'log', 'No events found, trying category-based fallback...');
@@ -470,7 +465,7 @@ export async function* findRelatedBets(
         `Found ${events.length} events from category search (${category})`
       );
     }
-    
+
     // Step 4: LLM selects 8 most relevant events, filtering out visited slugs
     if (events.length > 0) {
       const selectedSlugs = await selectRelevantEvents(
@@ -485,7 +480,7 @@ export async function* findRelatedBets(
         'log',
         `LLM selected ${selectedSlugs.length} relevant events`
       );
-      
+
       // Step 5: Fetch markets from selected events and tag with event slug
       const eventMarketGroups = await mapWithConcurrency(
         selectedSlugs,
@@ -668,6 +663,9 @@ Description: ${m.description?.substring(0, 150)}...`;
         }
 
         const marketId = market.conditionId || market.condition_id || market.id;
+        const eventSlug =
+          (market as any)._eventSlug || market.event_slug || (market as any).eventSlug;
+        const marketSlug = market.market_slug || (market as any).slug;
         const relationship = validRelationships.includes(bet.relationship)
           ? bet.relationship
           : 'WEAK_SIGNAL';
@@ -678,7 +676,8 @@ Description: ${m.description?.substring(0, 150)}...`;
           market: {
             id: marketId,
             condition_id: market.condition_id || marketId,
-            market_slug: market.market_slug,
+            market_slug: marketSlug,
+            event_slug: market.event_slug ?? (market as any).eventSlug ?? eventSlug,
             question: market.question,
             description: market.description,
             outcomes: getOutcomes(market),
@@ -686,7 +685,7 @@ Description: ${m.description?.substring(0, 150)}...`;
             volume: market.volume,
             liquidity: market.liquidity,
           },
-          eventSlug: (market as any)._eventSlug,
+          eventSlug,
           relationship: relationship as BetRelationship,
           reasoning: bet.reasoning || 'Related market',
           yesPercentage: percentages.yes,
