@@ -71,11 +71,9 @@ export default function DecisionScreen({
   globalsError,
 }: DecisionScreenProps) {
   const [accepted, setAccepted] = useState<boolean | null>(null);
-  const [riskLevel, setRiskLevel] = useState(50);
   const [viewNodesHover, setViewNodesHover] = useState(false);
   const [acceptBtnHover, setAcceptBtnHover] = useState(false);
   const [rejectBtnHover, setRejectBtnHover] = useState(false);
-  const [riskHover, setRiskHover] = useState(false);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -439,57 +437,6 @@ export default function DecisionScreen({
         position: 'relative',
         zIndex: 10,
       }}>
-        {/* Risk Slider */}
-        <div>
-          <div style={{
-            fontSize: '9px',
-            color: '#64748b',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            marginBottom: '6px',
-            fontWeight: 600,
-          }}>Risk</div>
-          <div
-            onMouseEnter={() => setRiskHover(true)}
-            onMouseLeave={() => setRiskHover(false)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              width: '100%',
-              background: 'linear-gradient(180deg, #3d4f63 0%, #2a3a4a 100%)',
-              color: '#e2e8f0',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: riskHover ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
-              cursor: 'pointer',
-              boxShadow: riskHover
-                ? '0 8px 24px rgba(70, 100, 140, 0.25)'
-                : '0 2px 8px rgba(0, 0, 0, 0.15)',
-              outline: 'none',
-              transition: 'all 0.2s ease',
-              filter: riskHover ? 'brightness(1.2)' : 'brightness(1)',
-            }}
-          >
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              value={riskLevel}
-              onChange={(e) => setRiskLevel(Number(e.target.value))}
-                style={{
-                flex: 1,
-                    cursor: 'pointer',
-                accentColor: '#38bdf8',
-              }}
-            />
-            <span style={{ fontSize: '11px', fontWeight: 600, minWidth: '32px', textAlign: 'right' }}>
-              {Math.round(riskLevel)}
-            </span>
-                  </div>
-        </div>
-
         {/* Chain Dependency - Mini Graph (matching VisualizationScreen style) */}
         <div>
           <div style={{
@@ -753,7 +700,7 @@ export default function DecisionScreen({
             }}
             onClick={() => {
               setAccepted(true);
-              onDecision(true, riskLevel);
+              onDecision(true, 50);
             }}
           >
             Accept
@@ -787,7 +734,7 @@ export default function DecisionScreen({
             }}
             onClick={() => {
               setAccepted(false);
-              onDecision(false, riskLevel);
+              onDecision(false, 50);
             }}
           >
             Reject

@@ -3,6 +3,7 @@ export type Decision = 'yes' | 'no';
 export type RelationType =
   | 'IMPLIES'
   | 'CONTRADICTS'
+  | 'CORRELATED'
   | 'PARTITION_OF'
   | 'SUBEVENT'
   | 'CONDITIONED_ON'

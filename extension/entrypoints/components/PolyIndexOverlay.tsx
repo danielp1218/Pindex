@@ -9,7 +9,6 @@ interface PolyIndexOverlayProps {
 
 export default function PolyIndexOverlay({ eventSlug, userSelection }: PolyIndexOverlayProps) {
   const [accepted, setAccepted] = useState<boolean | null>(null);
-  const [riskLevel, setRiskLevel] = useState(50);
   const [nodesExpanded, setNodesExpanded] = useState(false);
   const [showReasoning, setShowReasoning] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -45,30 +44,7 @@ export default function PolyIndexOverlay({ eventSlug, userSelection }: PolyIndex
 
       {!isMinimized && (
         <div className="p-4 flex flex-col gap-3 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 70px)' }}>
-          {/* 1. Risk */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Risk</span>
-              <span className="text-[11px] text-slate-200 font-semibold">{Math.round(riskLevel)}</span>
-            </div>
-            <div className="bg-[#1a2438] border border-slate-700/50 rounded-xl px-3 py-2">
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={riskLevel}
-                onChange={(e) => setRiskLevel(Number(e.target.value))}
-                className="w-full accent-sky-400"
-              />
-              <div className="flex justify-between text-[9px] text-slate-500 mt-1">
-                <span>0</span>
-                <span>100</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. Chain Dependency */}
+          {/* Chain Dependency */}
           <div
             onClick={() => setNodesExpanded(!nodesExpanded)}
             className="bg-[#1a2438] rounded-xl border border-slate-700/50 p-3 cursor-pointer hover:bg-[#1e293b] transition-colors"

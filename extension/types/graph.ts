@@ -1,6 +1,7 @@
 export type BetRelationship =
   | 'IMPLIES'
   | 'CONTRADICTS'
+  | 'CORRELATED'
   | 'PARTITION_OF'
   | 'SUBEVENT'
   | 'CONDITIONED_ON'
@@ -41,6 +42,7 @@ export interface GraphData {
 export const RELATIONSHIP_COLORS: Record<BetRelationship, string> = {
   IMPLIES: '#4a7c6f',
   CONTRADICTS: '#8b5c5c',
+  CORRELATED: '#6b7a8a',
   PARTITION_OF: '#5c7a9e',
   SUBEVENT: '#7a6b8a',
   CONDITIONED_ON: '#8a7a5c',
