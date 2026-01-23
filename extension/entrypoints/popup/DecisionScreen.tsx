@@ -86,7 +86,7 @@ export default function DecisionScreen({
     if (!svgRef.current || !miniGraphData) return;
 
     const width = 320;
-    const height = 90;
+    const height = 110;
 
     // Clear previous render
     select(svgRef.current).selectAll('*').remove();
@@ -112,7 +112,7 @@ export default function DecisionScreen({
       })
       .filter(Boolean) as Array<any>;
 
-    const nodeRadius = 16;
+    const nodeRadius = 14;
 
     // Add circular clip path for images
     const defs = svg.append('defs');

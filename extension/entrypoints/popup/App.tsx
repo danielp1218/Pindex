@@ -141,54 +141,99 @@ function App() {
       return abbrev || label.slice(0, 2).toUpperCase();
     };
 
-    const targetNode = {
-      id: displayItem.id,
-      label: createAbbreviation(targetLabel),
-      fullLabel: targetLabel,
-      x: hasSource ? 270 : 170,
-      y: 55,
-    };
-
-    if (!hasSource) {
-      return {
-        nodes: [targetNode],
-        links: [],
-        sourceLabel: '',
-        targetLabel,
-        reasoning: displayItem.explanation ?? '',
-        sourceImageUrl: undefined,
-      };
-    }
+    const allNodes: Array<{
+      id: string;
+      label: string;
+      fullLabel: string;
+      x: number;
+      y: number;
+      imageUrl?: string;
+    }> = [];
+    const allLinks: Array<{
+      source: string;
+      target: string;
+      relationship?: BetRelationship;
+      reasoning?: string;
+    }> = [];
+    const addedIds = new Set<string>();
 
     const sourceNode = displayItem.parentId
       ? findNodeById(relationGraph, displayItem.parentId) ?? relationGraph
       : relationGraph;
     const sourceLabel = displayItem.sourceQuestion ?? sourceNode.label ?? sourceNode.id;
 
-    return {
-      nodes: [
-        {
-          id: sourceNode.id,
-          label: createAbbreviation(sourceLabel),
-          fullLabel: sourceLabel,
-          x: 70,
-          y: 55,
-          imageUrl: sourceNode.imageUrl,
-        },
-        targetNode,
-      ],
-      links: [
-        {
+    if (hasSource) {
+      allNodes.push({
+        id: sourceNode.id,
+        label: createAbbreviation(sourceLabel),
+        fullLabel: sourceLabel,
+        x: 160,
+        y: 25,
+        imageUrl: sourceNode.imageUrl,
+      });
+      addedIds.add(sourceNode.id);
+    }
+
+    allNodes.push({
+      id: displayItem.id,
+      label: createAbbreviation(targetLabel),
+      fullLabel: targetLabel,
+      x: hasSource ? 160 : 160,
+      y: hasSource ? 65 : 45,
+    });
+    addedIds.add(displayItem.id);
+
+    if (hasSource) {
+      allLinks.push({
+        source: sourceNode.id,
+        target: displayItem.id,
+        relationship: displayItem.relation as BetRelationship,
+        reasoning: displayItem.explanation,
+      });
+    }
+
+    const siblings = (sourceNode.children ?? []).filter(
+      child => child.id !== displayItem.id && !addedIds.has(child.id)
+    );
+    const siblingCount = Math.min(4, siblings.length);
+    const siblingPositions = [
+      { x: 60, y: 65 },
+      { x: 260, y: 65 },
+      { x: 100, y: 85 },
+      { x: 220, y: 85 },
+    ];
+
+    for (let i = 0; i < siblingCount; i++) {
+      const sib = siblings[i];
+      const pos = siblingPositions[i];
+      const sibLabel = sib.question ?? sib.label ?? sib.id;
+      allNodes.push({
+        id: sib.id,
+        label: createAbbreviation(sibLabel),
+        fullLabel: sibLabel,
+        x: pos.x,
+        y: pos.y,
+        imageUrl: sib.imageUrl,
+      });
+      addedIds.add(sib.id);
+
+      if (hasSource) {
+        allLinks.push({
           source: sourceNode.id,
-          target: displayItem.id,
-          relationship: displayItem.relation as BetRelationship,
-          reasoning: displayItem.explanation,
-        },
-      ],
-      sourceLabel,
+          target: sib.id,
+          relationship: sib.relation as BetRelationship,
+          reasoning: sib.explanation,
+        });
+      }
+    }
+
+    return {
+      nodes: allNodes,
+      links: allLinks,
+      sourceLabel: hasSource ? sourceLabel : '',
       targetLabel,
       reasoning: displayItem.explanation ?? '',
-      sourceImageUrl: sourceNode.imageUrl,
+      sourceImageUrl: hasSource ? sourceNode.imageUrl : undefined,
     };
   }, [relationGraph, displayItem]);
 
