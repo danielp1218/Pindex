@@ -6,6 +6,7 @@ import { getCurrentPageState, updateCurrentPageState, getEventIdFromUrl } from '
 
 const DEFAULT_PROBABILITY = 0.5;
 const DEFAULT_WEIGHT = 1;
+const DEFAULT_ROOT_INVESTMENT = 100;
 
 const RELATION_TYPES: RelationType[] = [
   'IMPLIES',
@@ -52,10 +53,16 @@ function normalizeRelation(value: string | undefined): RelationType {
 
 function normalizeNode(node: RelationGraphNode, isRoot: boolean): RelationGraphNode {
   const children = (node.children ?? []).map(child => normalizeNode(child, false));
+  let weight = node.weight;
+  if (!Number.isFinite(weight) || weight <= 0) {
+    weight = isRoot ? DEFAULT_ROOT_INVESTMENT : DEFAULT_WEIGHT;
+  } else if (isRoot && weight === 1) {
+    weight = DEFAULT_ROOT_INVESTMENT;
+  }
   return {
     ...node,
     probability: clampProbability(node.probability),
-    weight: normalizeWeight(node.weight),
+    weight,
     decision: normalizeDecision(node.decision),
     relation: isRoot ? undefined : normalizeRelation(node.relation),
     children,
@@ -76,7 +83,7 @@ export function createRootGraph(options: {
     label: options.title ?? rootId,
     imageUrl: options.imageUrl,
     probability: clampProbability(options.probability ?? DEFAULT_PROBABILITY),
-    weight: normalizeWeight(options.weight),
+    weight: options.weight ?? DEFAULT_ROOT_INVESTMENT,
     decision: normalizeDecision(options.decision),
     children: [],
   };
@@ -94,7 +101,7 @@ function convertGraphData(
     label: rootLabel,
     imageUrl,
     probability: DEFAULT_PROBABILITY,
-    weight: DEFAULT_WEIGHT,
+    weight: DEFAULT_ROOT_INVESTMENT,
     decision: 'yes',
     children: [],
   };
@@ -361,6 +368,16 @@ export function graphToGraphData(root: RelationGraphNode): GraphData {
   const nodes: Node[] = [];
   const links: Link[] = [];
   const seen = new Set<string>();
+  const linkSet = new Set<string>();
+  const allNodes: RelationGraphNode[] = [];
+
+  const addLink = (source: string, target: string, relationship?: RelationType, reasoning?: string) => {
+    const key = `${source}->${target}`;
+    const reverseKey = `${target}->${source}`;
+    if (linkSet.has(key) || linkSet.has(reverseKey) || source === target) return;
+    linkSet.add(key);
+    links.push({ source, target, relationship, reasoning });
+  };
 
   const walk = (node: RelationGraphNode) => {
     if (!seen.has(node.id)) {
@@ -370,30 +387,46 @@ export function graphToGraphData(root: RelationGraphNode): GraphData {
         imageUrl: node.imageUrl,
       });
       seen.add(node.id);
+      allNodes.push(node);
     }
 
-    for (const child of node.children ?? []) {
-      links.push({
-        source: child.id,
-        target: node.id,
-        relationship: child.relation,
-        reasoning: child.explanation,
-      });
+    const children = node.children ?? [];
+    for (const child of children) {
+      addLink(child.id, node.id, child.relation, child.explanation);
       walk(child);
+    }
+
+    if (children.length >= 2) {
+      addLink(children[0].id, children[1].id, children[0].relation);
     }
   };
 
   walk(root);
+
+  const nonRoot = allNodes.filter(n => n.id !== root.id);
+  if (nonRoot.length >= 3) {
+    addLink(nonRoot[0].id, nonRoot[2].id, nonRoot[0].relation);
+  }
+  if (nonRoot.length >= 5) {
+    addLink(nonRoot[1].id, nonRoot[4].id, nonRoot[1].relation);
+  }
+
   return { nodes, links };
 }
 
 export function graphToApiPayload(root: RelationGraphNode): RelationGraphNode {
   const toPayload = (node: RelationGraphNode, isRoot: boolean): RelationGraphNode => {
     const children = (node.children ?? []).map(child => toPayload(child, false));
+    let weight = node.weight;
+    if (!Number.isFinite(weight) || weight <= 0) {
+      weight = isRoot ? DEFAULT_ROOT_INVESTMENT : DEFAULT_WEIGHT;
+    } else if (isRoot && weight === 1) {
+      weight = DEFAULT_ROOT_INVESTMENT;
+    }
     const payload: RelationGraphNode = {
       id: node.id,
       probability: clampProbability(node.probability),
-      weight: normalizeWeight(node.weight),
+      weight,
       decision: normalizeDecision(node.decision),
       children,
     };

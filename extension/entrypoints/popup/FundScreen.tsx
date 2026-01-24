@@ -19,7 +19,7 @@ function FundScreen({ relationGraph, globalsResult, globalsLoading, globalsError
     return childNodes.reduce((sum, node) => sum + (node.weight || 1), 0);
   }, [childNodes]);
 
-  const rootInvestment = relationGraph.weight || 1;
+  const rootInvestment = relationGraph.weight || 100;
 
   const allocations = useMemo(() => {
     if (totalWeight === 0) return [];
