@@ -95,6 +95,7 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
   const [hasTriedAutoSearch, setHasTriedAutoSearch] = useState(false);
   const [isAutoSearching, setIsAutoSearching] = useState(false);
   const [searchTimedOut, setSearchTimedOut] = useState(false);
+  const [lastAcceptedNodeId, setLastAcceptedNodeId] = useState<string | null>(null);
   const autoSearchStartRef = useRef<number | null>(null);
 
   const svgRef = useRef<SVGSVGElement>(null);
@@ -232,6 +233,7 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
       setHasTriedAutoSearch(false);
       setIsAutoSearching(false);
       setSearchTimedOut(false);
+      setLastAcceptedNodeId(null);
       setDependencyQueue([]);
       setDependencyVisited([]);
     }
@@ -251,6 +253,7 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
       setHasTriedAutoSearch(false);
       setIsAutoSearching(false);
       setSearchTimedOut(false);
+      setLastAcceptedNodeId(null);
       setRelationGraph(null);
       setHasStarted(false);
       setCurrentScreen('intro');
@@ -1186,7 +1189,9 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
 
     let nextGraph = relationGraph;
     if (accept && selectedItem && !isRootFallback) {
-      nextGraph = addQueueItemToGraph(relationGraph, selectedItem, relationGraph.id);
+      const parentId = lastAcceptedNodeId ?? relationGraph.id;
+      nextGraph = addQueueItemToGraph(relationGraph, selectedItem, parentId);
+      setLastAcceptedNodeId(selectedItem.id);
     }
 
     try {

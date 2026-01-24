@@ -305,9 +305,8 @@ export function addChildNode(
 export function addQueueItemToGraph(
   graph: RelationGraphNode,
   item: DependencyQueueItem,
-  fallbackParentId: string
+  parentId: string
 ): RelationGraphNode {
-  const parentId = item.parentId ?? fallbackParentId;
   const child = buildNodeFromQueueItem(item);
   return addChildNode(graph, parentId, child);
 }
