@@ -95,7 +95,6 @@ export async function searchEventsByCategory(
   category: string,
   logger?: Logger
 ): Promise<PolymarketEvent[]> {
-  // Use category as search term for fallback
   const categoryKeywords: Record<string, string> = {
     'Politics': 'politics election government',
     'Crypto': 'crypto bitcoin ethereum blockchain',
@@ -107,4 +106,63 @@ export async function searchEventsByCategory(
 
   const searchTerms = categoryKeywords[category] || category;
   return searchEventsByKeywords(searchTerms, logger);
+}
+
+export async function searchEventsByCombinedKeywords(
+  keywords: string[],
+  logger?: Logger
+): Promise<PolymarketEvent[]> {
+  if (keywords.length === 0) {
+    return [];
+  }
+
+  const allEvents: PolymarketEvent[] = [];
+  const seenSlugs = new Set<string>();
+
+  const combinedQuery = keywords.slice(0, 3).join(' ');
+  try {
+    const combinedResults = await searchEventsByKeywords(combinedQuery, logger);
+    for (const event of combinedResults) {
+      if (!seenSlugs.has(event.slug)) {
+        seenSlugs.add(event.slug);
+        allEvents.push(event);
+      }
+    }
+  } catch (error) {
+    logMessage(logger, 'warn', 'Combined keyword search failed', error);
+  }
+
+  for (const keyword of keywords) {
+    try {
+      const results = await searchEventsByKeywords(keyword, logger);
+      for (const event of results) {
+        if (!seenSlugs.has(event.slug)) {
+          seenSlugs.add(event.slug);
+          allEvents.push(event);
+        }
+      }
+    } catch (error) {
+      logMessage(logger, 'warn', `Keyword search failed for "${keyword}"`, error);
+    }
+  }
+
+  return allEvents;
+}
+
+export async function fetchActiveEvents(
+  logger?: Logger,
+  limit: number = 20
+): Promise<PolymarketEvent[]> {
+  try {
+    const response = await fetch(`${GAMMA_API}/events?limit=${limit}&closed=false&order=volume`);
+    if (!response.ok) {
+      logMessage(logger, 'error', 'Failed to fetch active events', response.statusText);
+      return [];
+    }
+    const events = await response.json() as PolymarketEvent[];
+    return events;
+  } catch (error) {
+    logMessage(logger, 'error', 'Error fetching active events', error);
+    return [];
+  }
 }

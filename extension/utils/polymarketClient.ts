@@ -32,12 +32,20 @@ function pickEventImage(event: any): string | undefined {
     event?.icon_url,
     event?.bannerImage,
     event?.banner_image,
+    event?.coverImage,
+    event?.cover_image,
+    event?.thumbnail,
+    event?.thumbnailUrl,
+    event?.thumbnail_url,
     event?.markets?.[0]?.image,
     event?.markets?.[0]?.imageUrl,
     event?.markets?.[0]?.image_url,
     event?.markets?.[0]?.icon,
     event?.markets?.[0]?.iconUrl,
     event?.markets?.[0]?.icon_url,
+    event?.markets?.[0]?.coverImage,
+    event?.markets?.[0]?.cover_image,
+    event?.markets?.[0]?.thumbnail,
   ];
 
   return candidates.find(isValidImageUrl);
@@ -74,13 +82,17 @@ export async function fetchEventInfoFromUrl(url: string): Promise<PolymarketEven
     }
 
     const events = await response.json();
-    const event = Array.isArray(events) ? events[0] : null;
+    const event = Array.isArray(events) ? events[0] : events;
     const question =
       event?.markets?.[0]?.question ||
       event?.title ||
       event?.question ||
       fallbackTitle;
     const imageUrl = pickEventImage(event);
+    
+    if (!imageUrl && event) {
+      console.log('[polymarketClient] No image found for event:', slug, 'Event data:', JSON.stringify(event).slice(0, 500));
+    }
 
     const info = {
       slug,

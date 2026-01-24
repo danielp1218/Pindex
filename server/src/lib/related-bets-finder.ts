@@ -2,8 +2,9 @@ import OpenAI from 'openai';
 import type { PolymarketMarket, BetRelationship } from '../types';
 import {
   fetchMarkets,
-  searchEventsByKeywords,
+  searchEventsByCombinedKeywords,
   searchEventsByCategory,
+  fetchActiveEvents,
   type PolymarketEvent,
 } from './polymarket-api';
 import { fetchEventMarkets } from './url-parser';
@@ -436,44 +437,42 @@ export async function* findRelatedBets(
 
 
 
-    // Step 2: Search for events using each keyword individually and combine results
-
-    const allEvents: PolymarketEvent[] = [];
-    const seenEventSlugs = new Set<string>();
-
-    for (const keyword of keywords) {
-      const keywordEvents = await searchEventsByKeywords(keyword, logger);
-      logMessage(
-        logger,
-        'log',
-        `Found ${keywordEvents.length} events for keyword "${keyword}"`
-      );
-
-      for (const event of keywordEvents) {
-        if (!seenEventSlugs.has(event.slug)) {
-          seenEventSlugs.add(event.slug);
-          allEvents.push(event);
-        }
-      }
-    }
-
+    // Step 2: Search for events using combined keywords (more effective than individual)
+    let events = await searchEventsByCombinedKeywords(keywords, logger);
     logMessage(
       logger,
       'log',
-      `Total unique events from all keywords: ${allEvents.length}`
+      `Found ${events.length} events from combined keyword search`
     );
 
-    let events = allEvents;
-
-    // Step 3: Fallback to category-based search if no results
-    if (events.length === 0) {
-      logMessage(logger, 'log', 'No events found, trying category-based fallback...');
+    // Step 3: Fallback to category-based search if insufficient results
+    if (events.length < 5) {
+      logMessage(logger, 'log', 'Insufficient events found, trying category-based fallback...');
       const category = await getMarketCategory(sourceMarket, c, logger);
-      events = await searchEventsByCategory(category, logger);
+      const categoryEvents = await searchEventsByCategory(category, logger);
+      const seenSlugs = new Set(events.map(e => e.slug));
+      for (const event of categoryEvents) {
+        if (!seenSlugs.has(event.slug)) {
+          seenSlugs.add(event.slug);
+          events.push(event);
+        }
+      }
       logMessage(
         logger,
         'log',
-        `Found ${events.length} events from category search (${category})`
+        `After category fallback: ${events.length} total events`
+      );
+    }
+
+    // Step 3b: Fallback to active/trending events if still no results
+    if (events.length === 0) {
+      logMessage(logger, 'log', 'No events from keyword/category search, fetching active events...');
+      const activeEvents = await fetchActiveEvents(logger, 30);
+      events = activeEvents;
+      logMessage(
+        logger,
+        'log',
+        `Found ${events.length} active events as fallback`
       );
     }
 

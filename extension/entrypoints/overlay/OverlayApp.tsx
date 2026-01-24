@@ -92,6 +92,10 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
   const [globalsLoading, setGlobalsLoading] = useState(false);
   const [displayItemImage, setDisplayItemImage] = useState<string | null>(null);
   const [sourceItemImage, setSourceItemImage] = useState<string | null>(null);
+  const [hasTriedAutoSearch, setHasTriedAutoSearch] = useState(false);
+  const [isAutoSearching, setIsAutoSearching] = useState(false);
+  const [searchTimedOut, setSearchTimedOut] = useState(false);
+  const autoSearchStartRef = useRef<number | null>(null);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -225,6 +229,11 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
       setCurrentScreen('intro');
       setIsLoading(false);
       setRelationGraph(null);
+      setHasTriedAutoSearch(false);
+      setIsAutoSearching(false);
+      setSearchTimedOut(false);
+      setDependencyQueue([]);
+      setDependencyVisited([]);
     }
   }, [isVisible]);
 
@@ -233,6 +242,21 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
       setProfileImage(initialProfileImage);
     }
   }, [initialProfileImage]);
+
+  const prevUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (currentUrl && prevUrlRef.current && prevUrlRef.current !== currentUrl) {
+      setDependencyQueue([]);
+      setDependencyVisited([]);
+      setHasTriedAutoSearch(false);
+      setIsAutoSearching(false);
+      setSearchTimedOut(false);
+      setRelationGraph(null);
+      setHasStarted(false);
+      setCurrentScreen('intro');
+    }
+    prevUrlRef.current = currentUrl;
+  }, [currentUrl]);
 
   useEffect(() => {
     if (!isVisible || !currentUrl) {
@@ -550,6 +574,66 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
       isActive = false;
     };
   }, [relationGraph, queuedItem]);
+
+  useEffect(() => {
+    if (
+      !isVisible ||
+      isLoading ||
+      isAutoSearching ||
+      hasTriedAutoSearch ||
+      !hasVisitedRoot ||
+      dependencyQueue.length > 0 ||
+      !currentUrl ||
+      !relationGraph ||
+      currentScreen !== 'decision'
+    ) {
+      return;
+    }
+
+    setHasTriedAutoSearch(true);
+    setIsAutoSearching(true);
+    autoSearchStartRef.current = Date.now();
+
+    const doAutoSearch = async () => {
+      try {
+        const result = await processDependencyDecisionInBackground({
+          eventUrl: currentUrl,
+          keep: true,
+          fallbackDecision: userSelection ?? 'yes',
+          fallbackWeight: 1,
+          risk: riskLevel,
+        });
+        const elapsed = Date.now() - (autoSearchStartRef.current ?? 0);
+        if (result.queue.length === 0 && elapsed >= 60000) {
+          setSearchTimedOut(true);
+        }
+        setDependencyQueue(result.queue);
+        setDependencyVisited(result.visited);
+      } catch (error) {
+        console.error('Auto-search failed', error);
+        const elapsed = Date.now() - (autoSearchStartRef.current ?? 0);
+        if (elapsed >= 60000) {
+          setSearchTimedOut(true);
+        }
+      } finally {
+        setIsAutoSearching(false);
+      }
+    };
+
+    void doAutoSearch();
+  }, [
+    isVisible,
+    isLoading,
+    isAutoSearching,
+    hasTriedAutoSearch,
+    hasVisitedRoot,
+    dependencyQueue.length,
+    currentUrl,
+    relationGraph,
+    currentScreen,
+    userSelection,
+    riskLevel,
+  ]);
 
   useEffect(() => {
     if (!isVisible || isLoading || currentScreen !== 'decision' || !miniGraphData) return;
@@ -1088,6 +1172,7 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
       console.error('Failed to process decision', error);
     } finally {
       setIsProcessingDecision(false);
+      setHasTriedAutoSearch(false);
     }
   };
 
@@ -1149,7 +1234,7 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
         </div>
       </div>
 
-      {miniGraphData && (
+      {miniGraphData ? (
       <div>
         <div style={{
           fontSize: '9px',
@@ -1273,6 +1358,31 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
             )}
         </div>
       </div>
+      ) : hasVisitedRoot && dependencyQueue.length === 0 && !isAutoSearching && (
+        <div style={{
+          background: '#1e293b',
+          borderRadius: '8px',
+          border: '1px solid #334155',
+          padding: '16px',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            fontSize: '13px',
+            color: '#94a3b8',
+            marginBottom: '12px',
+          }}>
+            {searchTimedOut ? 'Could not find related markets.' : 'No related markets found for this event.'}
+          </div>
+          <div style={{
+            fontSize: '11px',
+            color: '#64748b',
+            lineHeight: 1.5,
+          }}>
+            {searchTimedOut
+              ? 'Search timed out after 60 seconds. Try adjusting the risk level or exploring a different market.'
+              : 'This market may be unique or our search didn\'t find relevant connections.'}
+          </div>
+        </div>
       )}
 
       {userSelection && showUserSelection && (
@@ -1728,7 +1838,7 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
               </div>
             )}
 
-            {isLoading && hasStarted ? (
+            {(isLoading && hasStarted) || isAutoSearching ? (
               <div style={{
                 position: 'relative',
                 zIndex: 3,
@@ -1741,7 +1851,7 @@ export function OverlayApp({ isVisible, onClose, profileImage: initialProfileIma
               }}>
                 <VideoLoader size={160} />
                 <span style={{ fontSize: '13px', color: '#94a3b8', letterSpacing: '0.4px' }}>
-                  {isLoading ? 'Searching for related markets...' : 'calculating...'}
+                  Searching for related markets...
                 </span>
                 <button
                   onClick={() => setCurrentScreen('visualize')}

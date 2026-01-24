@@ -161,19 +161,26 @@ export async function processDependencyDecision({
     return { queue: nextQueue, visited: nextVisited };
   }
 
-  if (!current && hasVisitedEvent(visited, eventUrl)) {
+  if (current) {
     await setDependencyState(eventUrl, nextQueue, nextVisited);
     return { queue: nextQueue, visited: nextVisited };
   }
 
-  if (current) {
-    // Avoid expanding dependencies on every accept; only the root decision triggers expansion.
+  const shouldSearchForMore = !current && nextQueue.length === 0;
+
+  if (!shouldSearchForMore && hasVisitedEvent(visited, eventUrl)) {
     await setDependencyState(eventUrl, nextQueue, nextVisited);
     return { queue: nextQueue, visited: nextVisited };
   }
 
   let response: DependenciesResponse | undefined;
   const volatility = 0.5 + normalizeRisk(risk) / 100;
+
+  console.log('[dependencyQueue] Fetching dependencies', {
+    shouldSearchForMore,
+    visitedCount: nextVisited.length,
+    currentUrl,
+  });
 
   try {
     response = await fetchDependencies({
