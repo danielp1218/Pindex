@@ -137,7 +137,7 @@ function createSseLogger(stream: any, warnings: string[]): Logger {
 }
 
 dependenciesRouter.post('/', async (c: Context) => {
-  const { success } = await c.env.MY_RATE_LIMITER.limit({ key: "dependencies" }) // key can be any string of your choosing
+  const { success } = await c.env.RATE_LIMITER.limit({ key: "dependencies" }) // key can be any string of your choosing
   if (!success) {
   return new Response(`429 Failure – rate limit exceeded for dependencies`, { status: 429 })
   }
